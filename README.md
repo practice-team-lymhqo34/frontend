@@ -1,6 +1,7 @@
 # LogiFlow — Frontend
 
-> LogiFlow is a logistics management platform that helps teams track shipments, manage warehouses, and automate delivery workflows.
+> LogiFlow is a logistics management platform that helps teams track shipments,
+> manage warehouses, and automate delivery workflows.
 
 ## Features
 
@@ -14,7 +15,7 @@
 - TypeScript
 - Vue Router
 - Pinia
-- ESLint + Prettier
+- ESLint + Prettier + oxlint
 
 ## Getting Started
 
