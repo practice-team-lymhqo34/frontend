@@ -13,7 +13,6 @@
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
     "format": "prettier --write --experimental-cli .",
-    "commit": "cz",
     "prepare": "husky"
   },
   "dependencies": {
@@ -22,16 +21,12 @@
     "vue-router": "^5.0.4"
   },
   "devDependencies": {
-    "@commitlint/cli": "^20.5.0",
-    "@commitlint/config-conventional": "^20.5.0",
     "@tsconfig/node24": "^24.0.4",
     "@types/node": "^24.12.0",
     "@vitejs/plugin-vue": "^6.0.5",
     "@vue/eslint-config-prettier": "^10.2.0",
     "@vue/eslint-config-typescript": "^14.7.0",
     "@vue/tsconfig": "^0.9.1",
-    "commitizen": "^4.3.1",
-    "cz-conventional-changelog": "^3.3.0",
     "eslint": "^10.1.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-oxlint": "~1.57.0",
@@ -51,18 +46,13 @@
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   },
-  "config": {
-    "commitizen": {
-      "path": "./node_modules/cz-conventional-changelog"
-    }
-  },
   "lint-staged": {
     "*.{js,ts,vue}": [
       "oxlint --fix",
       "eslint --fix",
       "prettier --write"
     ],
-    "*.{html,css,scss}": [
+    "*.{html,css,scss,json,less}": [
       "prettier --write"
     ],
     "*.md": [
