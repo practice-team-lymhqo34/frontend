@@ -4,7 +4,7 @@ services:
     container_name: logiflow_s3_storage
     ports:
       - "8333:8333"
-      - "127.0.0.1:9333:9333"
+      - "23646:23646"
     command: "mini -dir=/data"
     volumes:
       - s3_data:/data
