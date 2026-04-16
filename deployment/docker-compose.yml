@@ -4,13 +4,14 @@ services:
     container_name: logiflow_s3_storage
     ports:
       - "8333:8333"
+      - "127.0.0.1:9333:9333"
     command: "mini -dir=/data"
     volumes:
       - s3_data:/data
     restart: unless-stopped
 
   s3-init:
-      image: amazon/aws-cli
+      image: amazon/aws-cli:2.34.30
       container_name: logiflow_s3_init
       depends_on:
         - seaweedfs
