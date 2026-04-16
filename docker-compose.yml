@@ -14,6 +14,10 @@ services:
       container_name: logiflow_s3_init
       depends_on:
         - seaweedfs
+      environment:
+        - AWS_ACCESS_KEY_ID=dummykey
+        - AWS_SECRET_ACCESS_KEY=dummysecret
+        - AWS_DEFAULT_REGION=us-east-1
       volumes:
         - ./policy.json:/tmp/policy.json
       entrypoint: [ "/bin/sh", "-c" ]
