@@ -1,4 +1,13 @@
 services:
+  frontend:
+    build:
+      context: ..
+    container_name: logiflow_frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ..:/app
+      - /app/node_modules
   seaweedfs:
     image: chrislusf/seaweedfs:4.20
     container_name: logiflow_s3_storage
