@@ -2,12 +2,13 @@ services:
   frontend:
     build:
       context: ..
+      dockerfile: deployment/Dockerfile
     container_name: logiflow_frontend
     ports:
-      - "5173:5173"
-    volumes:
-      - ..:/app
-      - /app/node_modules
+      - "5173:80"
+    depends_on:
+      - seaweedfs
+
   seaweedfs:
     image: chrislusf/seaweedfs:4.20
     container_name: logiflow_s3_storage
@@ -15,6 +16,7 @@ services:
       - "8333:8333"
       - "23646:23646"
     command: "mini -dir=/data"
+
     volumes:
       - s3_data:/data
     restart: unless-stopped
@@ -28,6 +30,7 @@ services:
         - AWS_ACCESS_KEY_ID=dummykey
         - AWS_SECRET_ACCESS_KEY=dummysecret
         - AWS_DEFAULT_REGION=us-east-1
+
       volumes:
         - ./policy.json:/tmp/policy.json
       entrypoint: [ "/bin/sh", "-c" ]
@@ -38,5 +41,6 @@ services:
         aws --endpoint-url http://seaweedfs:8333 s3api put-bucket-policy --bucket public-images --policy file:///tmp/policy.json;
         echo 'S3 Bucket initialized successfully!';
         "
+
 volumes:
   s3_data:
