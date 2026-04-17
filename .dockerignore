@@ -4,14 +4,14 @@ npm-debug.log*
 dist
 build
 
-Dockerfile
-docker-compose.yml
 deployment
+.dockerignore
 
 .vscode
 .idea
 .git
 .gitignore
+.github
 
 .env
 .env.*
@@ -19,3 +19,9 @@ deployment
 
 *.log
 .DS_Store
+
+README.md
+coverage
+*.md
+
+Thumbs.db
