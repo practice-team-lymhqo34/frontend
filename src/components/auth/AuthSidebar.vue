@@ -1,0 +1,26 @@
+<script setup lang="ts">
+import IconLogo from '@/components/icons/IconLogo.vue'
+
+const s3BaseUrl = import.meta.env.VITE_S3_BUCKET_URL || 'http://127.0.0.1:8333/public-images/auth'
+
+const backgroundImageUrl = `${s3BaseUrl}/auth-bg.png`
+</script>
+
+<template>
+  <div
+    class="hidden lg:flex relative w-1/2 flex-col overflow-hidden p-8 justify-between bg-cover bg-center bg-no-repeat"
+    :style="{ backgroundImage: `url('${backgroundImageUrl}')` }"
+  >
+    <div class="relative z-10 flex flex-col text-white">
+      <IconLogo class="w-45 h-auto" />
+
+      <h2 class="text-4xl font-bold tracking-tight">Deliver smarter, track faster</h2>
+    </div>
+
+    <div class="relative z-10 text-white">
+      <p class="text-[42px] font-bold leading-[1.1] max-w-[500px]">
+        Real-time logistics management for your entire fleet
+      </p>
+    </div>
+  </div>
+</template>
