@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import IconLogo from '@/components/icons/IconLogo.vue'
 
-const s3BaseUrl = import.meta.env.VITE_S3_BUCKET_URL || 'http://127.0.0.1:8333/public-images/auth'
+const s3BaseUrl = import.meta.env.VITE_S3_BUCKET_URL
 
-const backgroundImageUrl = `${s3BaseUrl}/auth-bg.png`
+const backgroundImageUrl = s3BaseUrl ? `${s3BaseUrl}/auth-bg.png` : ''
 </script>
 
 <template>
