@@ -4,7 +4,6 @@ export default {
   theme: {
     extend: {
       colors: {
-        // --- ТЕКСТ ---
         text: {
           primary: '#111827',
           secondary: '#4B5563',
@@ -14,14 +13,12 @@ export default {
           'sidebar-muted': '#C2DEFA',
         },
 
-        // --- БОРДЕРИ ---
         border: {
           default: '#E2E8F0',
           brand: '#C2DEFA',
           focus: '#1A7FD4',
         },
 
-        // --- СТАТУСИ (Логістика) ---
         status: {
           delivered: '#16A34A',
           'delivered-bg': '#F0FDF4',
@@ -35,7 +32,6 @@ export default {
           'pending-bg': '#FFFBEB',
         },
 
-        // --- КНОПКИ ---
         btn: {
           primary: {
             default: '#1A7FD4',
@@ -49,7 +45,6 @@ export default {
           },
         },
 
-        // --- ГРАФІКИ ---
         chart: {
           'line-primary': '#1A7FD4',
           'area-fill': '#EBF4FD',
@@ -57,7 +52,6 @@ export default {
           'axis-label': '#9CA3AF',
         },
 
-        // Твої попередні кольори бренду та фону
         brand: {
           primary: '#1A7FD4',
           dark: '#1465B0',
