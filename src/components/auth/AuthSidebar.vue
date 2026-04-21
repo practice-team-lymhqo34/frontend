@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import IconLogo from '@/components/icons/IconLogo.vue'
-
-const s3BaseUrl = import.meta.env.VITE_S3_BUCKET_URL
-const backgroundImageUrl = `${s3BaseUrl}/auth-bg.png`
+const backgroundImageUrl = '/img/auth/auth-bg.webp'
+const logoUrl = `img/logo.svg`
 </script>
 
 <template>
@@ -11,7 +9,7 @@ const backgroundImageUrl = `${s3BaseUrl}/auth-bg.png`
     :style="{ backgroundImage: `url('${backgroundImageUrl}')` }"
   >
     <div class="relative z-10 flex flex-col text-white">
-      <IconLogo class="w-45 h-auto" />
+      <img :src="logoUrl" alt="LogiFlow Logo" class="w-[180px] h-auto" />
 
       <h2 class="text-4xl font-bold tracking-tight">Deliver smarter, track faster</h2>
     </div>
