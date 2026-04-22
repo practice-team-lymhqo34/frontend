@@ -1,6 +1,9 @@
 <script setup lang="ts">
-const backgroundImageUrl = '/img/auth/auth-bg.webp'
-const logoUrl = `img/logo.svg`
+const s3BaseUrl = import.meta.env.VITE_S3_BUCKET_URL
+
+const backgroundImageUrl = s3BaseUrl ? `${s3BaseUrl}/auth-bg.webp` : '/img/auth/auth-bg.webp'
+
+const logoUrl = s3BaseUrl ? `${s3BaseUrl}/logo.svg` : '/img/logo.svg'
 </script>
 
 <template>
