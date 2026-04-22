@@ -5,7 +5,7 @@ dist
 build
 
 #deployment
-!(deployment/nginx.conf)
+!deployment/nginx.conf
 .dockerignore
 
 .vscode

@@ -39,7 +39,6 @@ __screenshots__/
 *.timestamp-*-*.mjs
 
 # env
-.env
 .env.local
 .env.*.local
 *.pem
