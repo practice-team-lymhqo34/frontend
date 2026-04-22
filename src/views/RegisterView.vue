@@ -2,23 +2,71 @@
 import { ref } from 'vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseSelect from '@/components/ui/BaseSelect.vue'
 import IconEye from '@/components/icons/IconEye.vue'
 import AuthSidebar from '@/components/auth/AuthSidebar.vue'
+import apiClient from '@/api/axios.ts'
+import router from '@/router'
+import axios from 'axios'
 
 const fullName = ref('')
 const email = ref('')
+const phoneNumber = ref('')
+const role = ref('')
 const password = ref('')
 const confirmPassword = ref('')
 
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 
-const handleRegister = () => {
-  console.log('Registration logic', {
-    fullName: fullName.value,
-    email: email.value,
-    password: password.value,
-  })
+const errorMessage = ref('')
+const isLoading = ref(false)
+
+const roleOptions = [
+  { value: 'client', label: 'Sender' },
+  { value: 'manager', label: 'Manager' },
+  { value: 'driver', label: 'Driver' },
+]
+
+const handleRegister = async () => {
+  errorMessage.value = ''
+
+  if (password.value !== confirmPassword.value) {
+    errorMessage.value = 'Паролі не співпадають'
+    return
+  }
+
+  isLoading.value = true
+
+  try {
+    // 👈 Тепер передаємо ВСІ 5 полів, які чекає UserCreate
+    await apiClient.post('/auth/register', {
+      email: email.value,
+      password: password.value,
+      full_name: fullName.value,
+      phone_number: phoneNumber.value,
+      role: role.value,
+    })
+
+    router.push('/login')
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      const detail = error.response?.data?.detail
+
+      if (Array.isArray(detail)) {
+        console.error('Помилки валідації від бекенду:', detail)
+        errorMessage.value = "Будь ласка, заповніть всі обов'язкові поля правильно."
+      } else if (typeof detail === 'string') {
+        errorMessage.value = detail
+      } else {
+        errorMessage.value = "Помилка з'єднання з сервером"
+      }
+    } else {
+      errorMessage.value = 'Сталася невідома помилка'
+    }
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
 
@@ -39,6 +87,10 @@ const handleRegister = () => {
           </div>
 
           <BaseInput v-model="email" label="Email Address" placeholder="user@gmail.com" />
+
+          <BaseInput v-model="phoneNumber" label="Phone Number" placeholder="+380991234567" />
+
+          <BaseSelect v-model="role" label="Select Role" :options="roleOptions" />
 
           <BaseInput
             v-model="password"
@@ -65,7 +117,12 @@ const handleRegister = () => {
             </template>
           </BaseInput>
 
-          <BaseButton type="submit" variant="primary"> Create Account </BaseButton>
+          <BaseButton type="submit" variant="primary" :disabled="isLoading">
+            {{ isLoading ? 'Creating Account...' : 'Create Account' }}
+          </BaseButton>
+          <div v-if="errorMessage" class="text-red-500 text-sm font-medium text-center mb-4">
+            {{ errorMessage }}
+          </div>
         </form>
 
         <div class="h-px bg-border-default w-full"></div>

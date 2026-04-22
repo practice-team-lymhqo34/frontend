@@ -4,7 +4,8 @@ npm-debug.log*
 dist
 build
 
-deployment
+#deployment
+!(deployment/nginx.conf)
 .dockerignore
 
 .vscode

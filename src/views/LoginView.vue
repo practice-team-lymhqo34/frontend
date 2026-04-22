@@ -6,12 +6,19 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseCheckbox from '@/components/ui/BaseCheckbox.vue'
 import IconEye from '@/components/icons/IconEye.vue'
 import AuthSidebar from '@/components/auth/AuthSidebar.vue'
+import apiClient from '@/api/axios.ts'
+import { useRouter } from 'vue-router'
+import axios from 'axios'
+
+const router = useRouter()
 
 const email = ref('')
 const password = ref('')
 const role = ref('')
 const rememberMe = ref(false)
 const showPassword = ref(false)
+const errorMessage = ref('')
+const isLoading = ref(false)
 
 const roleOptions = [
   { value: 'manager', label: 'Manager' },
@@ -19,7 +26,31 @@ const roleOptions = [
   { value: 'dispatcher', label: 'Sender' },
 ]
 
-const handleLogin = () => console.log('Login logic here') //todo
+const handleLogin = async () => {
+  errorMessage.value = ''
+  isLoading.value = true
+
+  try {
+    const response = await apiClient.post('/auth/login', {
+      email: email.value,
+      password: password.value,
+      // role: role.value,
+    })
+
+    console.log('Login successful:', response.data)
+    router.push('/dashboard')
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      if (error.response?.data?.detail) {
+        errorMessage.value = error.response.data.detail
+      } else {
+        errorMessage.value = 'Server connection error'
+      }
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -55,7 +86,12 @@ const handleLogin = () => console.log('Login logic here') //todo
             <a href="#" class="text-text-link text-sm hover:underline">Forgot Password?</a>
           </div>
 
-          <BaseButton type="submit" variant="primary"> Log In </BaseButton>
+          <BaseButton type="submit" variant="primary" :disabled="isLoading">
+            {{ isLoading ? 'Logging in...' : 'Log In' }}
+          </BaseButton>
+          <div v-if="errorMessage" class="text-red-500 text-sm text-center font-medium">
+            {{ errorMessage }}
+          </div>
         </form>
 
         <div class="h-px bg-border-default w-full"></div>
