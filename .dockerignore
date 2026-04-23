@@ -5,6 +5,7 @@ dist
 build
 
 deployment
+!deployment/nginx.conf
 .dockerignore
 
 .vscode
@@ -13,7 +14,6 @@ deployment
 .gitignore
 .github
 
-.env
 .env.*
 !.env.example
 
@@ -25,3 +25,5 @@ coverage
 *.md
 
 Thumbs.db
+
+public

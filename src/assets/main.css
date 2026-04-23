@@ -1,35 +1,44 @@
-@import './base.css';
+@import 'tailwindcss';
+
+@theme {
+  --color-brand-primary: #1a7fd4;
+  --color-brand-dark: #1465b0;
+  --color-brand-subtle: #ebf4fd;
+
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-placeholder: #9ca3af;
+  --color-text-link: #1a7fd4;
+  --color-text-sidebar-muted: #c2defa;
+
+  --color-bg-canvas: #ffffff;
+  --color-bg-surface: #f4f7fa;
+  --color-bg-surface-raised: #e8eff6;
+  --color-bg-sidebar: #0d4c8a;
+
+  --color-btn-primary-default: #1a7fd4;
+  --color-btn-primary-hover: #1465b0;
+  --color-btn-primary-pressed: #0d4c8a;
+
+  --color-border-default: #e2e8f0;
+  --color-border-focus: #1a7fd4;
+
+  --color-on-dark: #ffffff;
+}
+
+:root {
+  background-color: white;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  display: block !important;
+}
 
 #app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  font-weight: normal;
-}
-
-a,
-.green {
-  text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
-  padding: 3px;
-}
-
-@media (hover: hover) {
-  a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
-  }
-}
-
-@media (min-width: 1024px) {
-  body {
-    display: flex;
-    place-items: center;
-  }
-
-  #app {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
-  }
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: block !important;
 }
