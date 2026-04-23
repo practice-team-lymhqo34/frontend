@@ -1,6 +1,28 @@
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import IconLogo from '@/components/icons/IconLogo.vue'
+import apiClient from '@/api/axios'
+
+export interface SidebarLink {
+  name: string
+  path: string
+}
+
+defineProps<{
+  links: SidebarLink[]
+}>()
+
+const router = useRouter()
+
+const handleLogout = async () => {
+  try {
+    await apiClient.post('/logout')
+  } catch (error) {
+    console.error('Помилка при виході:', error)
+  } finally {
+    router.push('/login')
+  }
+}
 </script>
 
 <template>
@@ -34,40 +56,23 @@ import IconLogo from '@/components/icons/IconLogo.vue'
 
     <nav class="flex flex-col gap-0.5">
       <RouterLink
-        to="/dashboard"
+        v-for="link in links"
+        :key="link.path"
+        :to="link.path"
         class="px-3 py-2 rounded text-sm text-text-sidebar-muted hover:text-white transition-colors"
-        :class="$route.path === '/dashboard' ? 'bg-[#083672] text-white' : 'hover:bg-[#083672]'"
+        :class="$route.path === link.path ? 'bg-[#083672] text-white' : 'hover:bg-[#083672]'"
       >
-        Overview Dashboard
-      </RouterLink>
-      <RouterLink
-        to="/shipments"
-        class="px-3 py-2 rounded text-sm text-text-sidebar-muted hover:text-white transition-colors"
-        :class="$route.path === '/shipments' ? 'bg-[#083672] text-white' : 'hover:bg-[#083672]'"
-      >
-        Shipments
-      </RouterLink>
-      <RouterLink
-        to="/users"
-        class="px-3 py-2 rounded text-sm text-text-sidebar-muted hover:text-white transition-colors"
-        :class="$route.path === '/users' ? 'bg-[#083672] text-white' : 'hover:bg-[#083672]'"
-      >
-        Users
-      </RouterLink>
-      <RouterLink
-        to="/delivery/new"
-        class="px-3 py-2 rounded text-sm text-text-sidebar-muted hover:text-white transition-colors"
-        :class="$route.path === '/delivery/new' ? 'bg-[#083672] text-white' : 'hover:bg-[#083672]'"
-      >
-        + Create New Delivery
-      </RouterLink>
-      <RouterLink
-        to="/settings"
-        class="px-3 py-2 rounded text-sm text-text-sidebar-muted hover:text-white transition-colors"
-        :class="$route.path === '/settings' ? 'bg-[#083672] text-white' : 'hover:bg-[#083672]'"
-      >
-        Settings
+        {{ link.name }}
       </RouterLink>
     </nav>
+
+    <div class="mt-auto pt-4">
+      <button
+        @click="handleLogout"
+        class="w-full text-left px-3 py-2 rounded text-sm text-text-sidebar-muted hover:text-red-400 hover:bg-[#083672] transition-colors flex items-center gap-2"
+      >
+        Log Out
+      </button>
+    </div>
   </aside>
 </template>
