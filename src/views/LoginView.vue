@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
-import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseCheckbox from '@/components/ui/BaseCheckbox.vue'
 import IconEye from '@/components/icons/IconEye.vue'
@@ -14,17 +13,10 @@ const router = useRouter()
 
 const email = ref('')
 const password = ref('')
-const role = ref('')
 const rememberMe = ref(false)
 const showPassword = ref(false)
 const errorMessage = ref('')
 const isLoading = ref(false)
-
-const roleOptions = [
-  { value: 'manager', label: 'Manager' },
-  { value: 'driver', label: 'Driver' },
-  { value: 'dispatcher', label: 'Sender' },
-]
 
 const handleLogin = async () => {
   errorMessage.value = ''
@@ -34,7 +26,6 @@ const handleLogin = async () => {
     const response = await apiClient.post('/auth/login', {
       email: email.value,
       password: password.value,
-      // role: role.value,
     })
 
     console.log('Login successful:', response.data)
@@ -76,8 +67,6 @@ const handleLogin = async () => {
               </button>
             </template>
           </BaseInput>
-
-          <BaseSelect v-model="role" label="Select role" :options="roleOptions" />
 
           <div class="flex items-center justify-between">
             <label class="flex items-center gap-2 cursor-pointer">
