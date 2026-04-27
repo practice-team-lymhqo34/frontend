@@ -29,7 +29,18 @@ const handleLogin = async () => {
     })
 
     console.log('Login successful:', response.data)
-    router.push('/dashboard')
+    const userRole = response.data.role
+
+    if (userRole === 'manager') {
+      await router.push('/dashboard')
+    } else if (userRole === 'driver') {
+      await router.push('/driver/route')
+    } else if (userRole === 'client') {
+      await router.push('/recipient/billing')
+    } else {
+      console.warn('Unknown role:', userRole)
+      await router.push('/dashboard')
+    }
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
       if (error.response?.data?.detail) {
