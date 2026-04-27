@@ -3,6 +3,8 @@ import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import DriverLayout from '@/layouts/DriverLayout.vue'
 import TodaysRouteView from '@/views/TodaysRouteView.vue'
+import RecipientLayout from '@/layouts/RecipientLayout.vue'
+import RecipientView from '@/views/RecipientView.vue'
 import CreateDelivery from '@/views/CreateDelivery.vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import DashboardView from '@/views/DashboardView.vue'
@@ -46,6 +48,16 @@ const router = createRouter({
         {
           path: 'route',
           component: TodaysRouteView,
+        },
+      ],
+    },
+    {
+      path: '/recipient',
+      component: RecipientLayout,
+      children: [
+        {
+          path: 'billing',
+          component: RecipientView,
         },
       ],
     },
