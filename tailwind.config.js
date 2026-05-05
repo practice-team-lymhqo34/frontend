@@ -61,9 +61,9 @@ export default {
         bg: {
           canvas: '#FFFFFF',
           surface: '#F4F7FA',
-          'surface-raised': '#E8EFF6',
           sidebar: '#0D4C8A',
           'sidebar-active': '#083672',
+          'surface-raised': '#E8EFF6',
         },
       },
       fontFamily: {
