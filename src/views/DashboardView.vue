@@ -28,20 +28,18 @@ const cities = [
   <div class="p-8 bg-bg-surface min-h-screen">
     <h1 class="text-3xl font-bold text-text-primary mb-6">Dashboard</h1>
 
-    <div class="grid grid-cols-4 gap-4 mb-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       <StatCard v-for="stat in stats" :key="stat.title" v-bind="stat" />
     </div>
 
-    <div class="grid grid-cols-3 gap-6 mb-8">
-      <div class="col-span-2">
-        <h2 class="text-xl font-bold text-text-primary mb-4">Activity</h2>
-        <div
-          class="bg-bg-canvas border border-border-default rounded-lg p-4 h-[300px] flex items-center justify-center text-text-placeholder"
-        >
+    <div class="bg-bg-canvas border border-border-default rounded-lg p-4 text-text-placeholder">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div class="lg:col-span-2">
+          <h2 class="text-xl font-bold text-text-primary mb-4">Activity</h2>
           Chart placeholder
         </div>
+        <UsersByCity :cities="cities" />
       </div>
-      <UsersByCity :cities="cities" />
     </div>
 
     <LatestUpdates :updates="updates" />
