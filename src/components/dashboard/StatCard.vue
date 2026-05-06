@@ -17,10 +17,10 @@ const trendFormatted = computed(() => {
 <template>
   <div class="bg-bg-canvas border border-border-default rounded-lg p-4 flex flex-col gap-2">
     <div class="text-text-secondary text-xs font-medium">{{ title }}</div>
-    <div class="flex items-end justify-between">
+    <div class="flex items-end justify-between mt-1">
       <div class="text-2xl font-bold text-text-primary">{{ value }}</div>
       <div
-        class="px-2 py-0.5 rounded text-xs font-medium"
+        class="text-xs font-medium"
         :class="
           isPositive
             ? 'bg-status-delivered-bg text-status-delivered'

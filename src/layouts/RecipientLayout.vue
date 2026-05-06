@@ -1,20 +1,13 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
-import MainSidebar from '@/components/layout/MainSidebar.vue'
+import AppLayout from '@/layouts/AppLayout.vue'
 
 const recipientLinks = [
-  { name: 'Billings & Reports', path: '/recipient/billing' },
-  { name: 'Active Deliveries', path: '/recipient/active' },
-  { name: 'Settings', path: '/settings' },
+  { name: 'Billings & Reports', path: '/recipient/billing', icon: 'PackageCheck' },
+  { name: 'Active Deliveries', path: '/recipient/active', icon: 'FileText' },
+  { name: 'Settings', path: '/settings', icon: 'Settings' },
 ]
 </script>
 
 <template>
-  <div class="flex min-h-screen bg-bg-surface font-roboto">
-    <MainSidebar :links="recipientLinks" />
-
-    <main class="flex-1 overflow-y-auto">
-      <RouterView />
-    </main>
-  </div>
+  <AppLayout :links="recipientLinks" />
 </template>
