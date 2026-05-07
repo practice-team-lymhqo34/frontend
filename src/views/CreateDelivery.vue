@@ -1,24 +1,56 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '@/api/axios'
+import { Package, X } from 'lucide-vue-next'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseInput from '@/components/ui/BaseInput.vue'
+import BaseCheckbox from '@/components/ui/BaseCheckbox.vue'
+
+interface OrderForm {
+  title: string
+  description: string
+  weight: string
+  isTemplate: boolean
+}
+
+const STORAGE_KEY = 'order-form-draft'
 
 const router = useRouter()
 const isSubmitting = ref(false)
 
-const form = reactive({
-  title: '',
-  description: '',
-  weight: null as number | null,
-})
+const savedDraft = localStorage.getItem(STORAGE_KEY)
+
+const form = reactive<OrderForm>(
+  savedDraft
+    ? JSON.parse(savedDraft)
+    : {
+        title: '',
+        description: '',
+        weight: '',
+        isTemplate: false,
+      },
+)
+
+watch(
+  form,
+  (newVal) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newVal))
+  },
+  { deep: true },
+)
 
 const submitOrder = async () => {
   isSubmitting.value = true
 
   try {
-    const response = await apiClient.post('/orders/', form)
-    console.log('Order created:', response.data)
-
+    await apiClient.post('/orders/', {
+      title: form.title,
+      description: form.description || null,
+      weight: parseFloat(form.weight),
+      is_template: form.isTemplate,
+    })
+    localStorage.removeItem(STORAGE_KEY)
     router.push('/dashboard') //todo router.push('/shipments')
   } catch (error) {
     console.error('Помилка при створенні замовлення:', error)
@@ -29,74 +61,49 @@ const submitOrder = async () => {
 </script>
 
 <template>
-  <div class="p-8 max-w-3xl text-[#333333] font-roboto">
+  <div class="p-8 max-w-3xl text-primary font-roboto">
     <div class="mb-8">
       <h1 class="text-[32px] font-bold mb-1">Create New Delivery</h1>
       <p class="text-gray-500">Basic order details</p>
     </div>
 
     <form @submit.prevent="submitOrder">
-      <div class="bg-white p-6 border border-gray-200 mb-8">
-        <h2 class="text-sm font-bold tracking-wider text-gray-700 mb-5">ORDER DETAILS</h2>
+      <div class="bg-bg-canvas p-6 border border-gray-200 mb-8">
+        <h2 class="text-sm font-bold tracking-wider text-text-secondary mb-5">ORDER DETAILS</h2>
 
         <div class="space-y-5">
-          <div>
-            <label class="block text-xs text-gray-500 mb-1.5"
-              >Delivery Title <span class="text-red-500">*</span></label
-            >
-            <input
-              v-model="form.title"
-              type="text"
-              placeholder="e.g. Electronics to Kyiv"
-              class="w-full bg-[#F8F9FA] border-none rounded px-4 py-2.5 text-sm focus:ring-1 focus:ring-[#083672] outline-none"
-              required
-            />
-          </div>
+          <BaseInput
+            v-model="form.title"
+            label="Delivery Title *"
+            placeholder="e.g. Electronics to Kyiv"
+          />
 
-          <div>
-            <label class="block text-xs text-gray-500 mb-1.5"
-              >Weight (kg) <span class="text-red-500">*</span></label
-            >
-            <input
-              v-model="form.weight"
-              type="number"
-              step="0.1"
-              min="0"
-              placeholder="0.0"
-              class="w-full bg-[#F8F9FA] border-none rounded px-4 py-2.5 text-sm focus:ring-1 focus:ring-[#083672] outline-none"
-              required
-            />
-          </div>
+          <BaseInput v-model="form.weight" label="Weight (kg) *" type="number" placeholder="0.0" />
 
-          <div>
-            <label class="block text-xs text-gray-500 mb-1.5">Description (Optional)</label>
+          <div class="flex flex-col gap-1 w-full">
+            <label class="text-text-primary text-sm font-normal leading-[140%]">
+              Description (Optional)
+            </label>
             <textarea
               v-model="form.description"
               rows="4"
-              placeholder="Any additional notes or details about the shipment..."
-              class="w-full bg-[#F8F9FA] border-none rounded px-4 py-2.5 text-sm focus:ring-1 focus:ring-[#083672] outline-none resize-none"
-            ></textarea>
+              placeholder="Any additional notes..."
+              class="px-4 py-3 bg-bg-surface border-b border-border-default focus:border-border-focus text-base text-text-primary placeholder-text-placeholder outline-none resize-none transition-colors"
+            />
           </div>
+          <BaseCheckbox v-model="form.isTemplate" label="Save as template" />
         </div>
       </div>
 
       <div class="flex gap-4">
-        <button
-          type="button"
-          @click="$router.back()"
-          class="flex-1 flex justify-center items-center gap-2 border border-[#1E73BE] text-[#1E73BE] bg-white rounded py-3 font-semibold hover:bg-blue-50 transition-colors"
-        >
-          <span class="text-lg leading-none">✕</span> Cancel
-        </button>
+        <BaseButton variant="secondary" type="button" @click="$router.back()">
+          <X class="w-4 h-4 mr-2" /> Cancel
+        </BaseButton>
 
-        <button
-          type="submit"
-          :disabled="isSubmitting"
-          class="flex-1 flex justify-center items-center gap-2 bg-[#1E73BE] text-white rounded py-3 font-semibold hover:bg-[#083672] disabled:bg-blue-300 transition-colors"
-        >
-          <span class="text-lg leading-none">📦</span>
+        <BaseButton type="submit" :disabled="isSubmitting">
+          <Package class="w-4 h-4 mr-2" />
           {{ isSubmitting ? 'Creating...' : 'Create Shipment' }}
-        </button>
+        </BaseButton>
       </div>
     </form>
   </div>
