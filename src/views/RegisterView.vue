@@ -32,14 +32,13 @@ const handleRegister = async () => {
   errorMessage.value = ''
 
   if (password.value !== confirmPassword.value) {
-    errorMessage.value = 'Паролі не співпадають'
+    errorMessage.value = 'Passwords does not match'
     return
   }
 
   isLoading.value = true
 
   try {
-    // 👈 Тепер передаємо ВСІ 5 полів, які чекає UserCreate
     await apiClient.post('/auth/register', {
       email: email.value,
       password: password.value,
@@ -55,14 +54,14 @@ const handleRegister = async () => {
 
       if (Array.isArray(detail)) {
         console.error('Помилки валідації від бекенду:', detail)
-        errorMessage.value = "Будь ласка, заповніть всі обов'язкові поля правильно."
+        errorMessage.value = 'Please, fill all the necessary fields correctly.'
       } else if (typeof detail === 'string') {
         errorMessage.value = detail
       } else {
-        errorMessage.value = "Помилка з'єднання з сервером"
+        errorMessage.value = 'Server connection failed'
       }
     } else {
-      errorMessage.value = 'Сталася невідома помилка'
+      errorMessage.value = 'Unknown error'
     }
   } finally {
     isLoading.value = false
