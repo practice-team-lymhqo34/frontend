@@ -44,7 +44,7 @@ const submitOrder = async () => {
   isSubmitting.value = true
 
   try {
-    await apiClient.post('/orders/', {
+    await apiClient.post('/dashboard/orders', {
       title: form.title,
       description: form.description || null,
       weight: parseFloat(form.weight),

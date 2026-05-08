@@ -8,6 +8,7 @@ import RecipientView from '@/views/RecipientView.vue'
 import CreateDelivery from '@/views/CreateDelivery.vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import DashboardView from '@/views/DashboardView.vue'
+import ShipmentDetailsView from '@/views/ShipmentDetailsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -38,6 +39,16 @@ const router = createRouter({
           path: 'delivery/new',
           name: 'create-delivery',
           component: CreateDelivery,
+        },
+        {
+          path: 'shipments/details',
+          name: 'shipment-details',
+          component: ShipmentDetailsView,
+        },
+        {
+          path: 'shipments',
+          name: 'shipments',
+          component: ShipmentDetailsView,
         },
       ],
     },
