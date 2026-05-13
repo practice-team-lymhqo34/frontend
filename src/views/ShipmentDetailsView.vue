@@ -3,40 +3,59 @@ import type { Order, Route, User } from '@/types'
 import ShipmentPackageDetails from '@/components/shipment-details/ShipmentPackageDetails.vue'
 import ShipmentStatusTimeline from '@/components/shipment-details/ShipmentStatusTimeline.vue'
 import { Edit, Printer, ArrowLeft } from 'lucide-vue-next'
-import { useRouter } from 'vue-router'
-import { ref } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { ref, onMounted } from 'vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import apiClient from '@/api/axios'
 
 const router = useRouter()
+const routePath = useRoute()
+const orderId = routePath.params.id
 
-// TODO: замінити на useRoute().params.id + apiClient
-const order = ref<Order>({
-  id: 4,
-  title: 'PT-№4',
-  description: 'Standard Delivery',
-  weight: 15,
-  status: 'awaiting_confirmation',
-  owner_id: 1,
-  created_at: '2026-03-15T10:00:00Z',
-})
-
-const route = ref<Route>({
-  id: 1,
-  order_id: 4,
-  driver_id: null,
-  started_at: null,
-  eta: '2026-03-17T14:00:00Z',
-  completed_at: null,
-  statuses: [
-    { id: 1, route_id: 1, status: 'assigned', created_at: '2026-03-15T10:00:00Z' },
-    { id: 2, route_id: 1, status: 'in_transit', created_at: '2026-03-16T08:30:00Z' },
-  ],
-})
+const order = ref<Order | null>(null)
+const route = ref<Route | null>(null)
 const assignedDriver = ref<User | null>(null)
+const isLoading = ref(true)
+const error = ref('')
+
+const fetchData = async () => {
+  isLoading.value = true
+  error.value = ''
+  try {
+    const orderRes = await apiClient.get(`/dashboard/orders/${orderId}`)
+    order.value = orderRes.data
+
+    const routeRes = await apiClient.get(`/dashboard/routes`, {
+      params: { order_id: orderId },
+    })
+
+    if (routeRes.data && routeRes.data.length > 0) {
+      route.value = routeRes.data[0]
+    }
+  } catch (err: unknown) {
+    console.error('Failed to fetch shipment details:', err)
+    error.value = 'Failed to load shipment details.'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(fetchData)
 </script>
 
 <template>
-  <div class="p-8 font-roboto">
+  <div v-if="isLoading" class="flex justify-center items-center min-h-screen">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary"></div>
+  </div>
+
+  <div v-else-if="error || !order" class="p-8 text-center">
+    <div class="bg-red-50 border border-red-200 text-red-600 p-4 rounded mb-4">
+      {{ error || 'Order not found' }}
+    </div>
+    <BaseButton @click="router.back()">Go Back</BaseButton>
+  </div>
+
+  <div v-else class="p-8 font-roboto">
     <button
       class="flex items-center gap-1 text-text-secondary text-xs mb-2 hover:text-text-primary transition-colors"
       @click="router.back()"
@@ -45,7 +64,7 @@ const assignedDriver = ref<User | null>(null)
     </button>
 
     <h1 class="text-3xl font-bold text-text-primary mb-1">Tracking Number: {{ order.title }}</h1>
-    <span class="text-xs text-status-pending font-medium mb-6 block">
+    <span class="text-xs text-status-pending font-medium mb-6 block uppercase">
       {{ order.status }}
     </span>
 
@@ -60,11 +79,21 @@ const assignedDriver = ref<User | null>(null)
           :order="order"
           :route="route"
           :assigned-driver="assignedDriver"
-          @driver-assigned="(id: number | null) => (route.driver_id = id)"
+          @driver-assigned="
+            (id: number | null) => {
+              if (route) route.driver_id = id
+            }
+          "
         />
       </div>
       <div>
-        <ShipmentStatusTimeline :route="route" />
+        <ShipmentStatusTimeline v-if="route" :route="route" />
+        <div
+          v-else
+          class="bg-bg-canvas border border-border-default p-6 text-center text-text-placeholder text-sm"
+        >
+          No route information available yet.
+        </div>
       </div>
     </div>
   </div>

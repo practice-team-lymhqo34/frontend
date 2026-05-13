@@ -16,25 +16,25 @@ const props = defineProps<{
 }>()
 
 const allSteps: { label: string; statusKey: RouteStatusEnum }[] = [
-  { label: 'Assigned to Driver', statusKey: 'assigned' },
-  { label: 'Loaded', statusKey: 'loaded' },
-  { label: 'In Transit', statusKey: 'in_transit' },
-  { label: 'Delivered', statusKey: 'delivered' },
+  { label: 'Assigned to Driver', statusKey: 'ASSIGNED' },
+  { label: 'Loaded', statusKey: 'LOADED' },
+  { label: 'In Transit', statusKey: 'IN_TRANSIT' },
+  { label: 'Delivered', statusKey: 'DELIVERED' },
 ]
 
 const steps = computed<TimelineStep[]>(() => {
-  const completedStatuses = new Set((props.route.statuses ?? []).map((s) => s.status))
+  const completedStatuses = new Set((props.route.statuses ?? []).map((s) => s.status as string))
 
   const lastCompleted = [...allSteps].reverse().find((s) => completedStatuses.has(s.statusKey))
 
   return allSteps.map((step) => {
     if (completedStatuses.has(step.statusKey) && step.statusKey !== lastCompleted?.statusKey) {
-      return { ...step, state: 'completed' }
+      return { ...step, state: 'completed' } as TimelineStep
     }
     if (step.statusKey === lastCompleted?.statusKey) {
-      return { ...step, state: 'current' }
+      return { ...step, state: 'current' } as TimelineStep
     }
-    return { ...step, state: 'pending' }
+    return { ...step, state: 'pending' } as TimelineStep
   })
 })
 </script>

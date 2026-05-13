@@ -2,6 +2,7 @@
 import { reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '@/api/axios'
+import axios from 'axios'
 import { Package, X } from 'lucide-vue-next'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -18,6 +19,7 @@ const STORAGE_KEY = 'order-form-draft'
 
 const router = useRouter()
 const isSubmitting = ref(false)
+const errorMessage = ref('')
 
 const savedDraft = localStorage.getItem(STORAGE_KEY)
 
@@ -41,19 +43,31 @@ watch(
 )
 
 const submitOrder = async () => {
+  if (!form.title || !form.weight) {
+    errorMessage.value = 'Please fill in all required fields.'
+    return
+  }
+
   isSubmitting.value = true
+  errorMessage.value = ''
 
   try {
-    await apiClient.post('/dashboard/orders', {
+    await apiClient.post('/orders/', {
       title: form.title,
       description: form.description || null,
       weight: parseFloat(form.weight),
       is_template: form.isTemplate,
     })
     localStorage.removeItem(STORAGE_KEY)
-    router.push('/dashboard') //todo router.push('/shipments')
-  } catch (error) {
-    console.error('Помилка при створенні замовлення:', error)
+    router.push('/recipient/orders')
+  } catch (err: unknown) {
+    console.error('Помилка при створенні замовлення:', err)
+    if (axios.isAxiosError(err)) {
+      errorMessage.value =
+        err.response?.data?.detail || 'An error occurred while creating the shipment.'
+    } else {
+      errorMessage.value = 'An unexpected error occurred.'
+    }
   } finally {
     isSubmitting.value = false
   }
@@ -64,12 +78,19 @@ const submitOrder = async () => {
   <div class="p-8 max-w-3xl text-primary font-roboto">
     <div class="mb-8">
       <h1 class="text-[32px] font-bold mb-1">Create New Delivery</h1>
-      <p class="text-gray-500">Basic order details</p>
+      <p class="text-gray-500">Order details</p>
     </div>
 
     <form @submit.prevent="submitOrder">
+      <div
+        v-if="errorMessage"
+        class="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded"
+      >
+        {{ errorMessage }}
+      </div>
+
       <div class="bg-bg-canvas p-6 border border-gray-200 mb-8">
-        <h2 class="text-sm font-bold tracking-wider text-text-secondary mb-5">ORDER DETAILS</h2>
+        <h2 class="text-sm font-bold tracking-wider text-text-secondary mb-5">DELIVERY DETAILS</h2>
 
         <div class="space-y-5">
           <BaseInput
