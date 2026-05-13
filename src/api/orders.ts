@@ -13,4 +13,11 @@ export const ordersApi = {
       (order) => order.status === 'PENDING' || (order.status as string) === 'pending',
     )
   },
+
+  async getTemplates(): Promise<Order[]> {
+    const response = await apiClient.get<Order[]>('/orders/', {
+      params: { is_template: true },
+    })
+    return response.data
+  },
 }
