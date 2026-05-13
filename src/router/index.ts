@@ -8,6 +8,8 @@ import RecipientView from '@/views/RecipientView.vue'
 import CreateDelivery from '@/views/CreateDelivery.vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import DashboardView from '@/views/DashboardView.vue'
+import { useAuthStore } from '../stores/auth'
+import ShipmentDetailsView from '@/views/ShipmentDetailsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -32,12 +34,64 @@ const router = createRouter({
       children: [
         {
           path: 'dashboard',
+          name: 'dashboard',
           component: DashboardView,
+        },
+        {
+          path: 'shipments',
+          name: 'shipments',
+          component: ShipmentDetailsView,
+        },
+        {
+          path: 'shipments/:id',
+          name: 'shipment-details',
+          component: ShipmentDetailsView,
+        },
+        {
+          path: 'users',
+          name: 'users',
+          component: () => import('../views/UsersView.vue'),
+        },
+        {
+          path: 'route-assignment',
+          name: 'route-assignment',
+          component: () => import('../views/RouteAssignmentView.vue'),
+        },
+        {
+          path: 'settings',
+          name: 'settings',
+          component: () => import('../views/SettingsView.vue'),
+        },
+      ],
+    },
+    {
+      path: '/recipient',
+      component: RecipientLayout,
+      children: [
+        {
+          path: 'orders',
+          name: 'recipient-orders',
+          component: () => import('../views/RecipientOrdersView.vue'),
+        },
+        {
+          path: 'active',
+          name: 'recipient-active',
+          component: RecipientView,
+        },
+        {
+          path: 'billing',
+          name: 'recipient-billing',
+          component: RecipientView,
         },
         {
           path: 'delivery/new',
           name: 'create-delivery',
           component: CreateDelivery,
+        },
+        {
+          path: 'settings',
+          name: 'recipient-settings',
+          component: () => import('../views/SettingsView.vue'),
         },
       ],
     },
@@ -47,21 +101,59 @@ const router = createRouter({
       children: [
         {
           path: 'route',
+          name: 'driver-route',
           component: TodaysRouteView,
         },
-      ],
-    },
-    {
-      path: '/recipient',
-      component: RecipientLayout,
-      children: [
         {
-          path: 'billing',
-          component: RecipientView,
+          path: 'settings',
+          name: 'driver-settings',
+          component: () => import('../views/SettingsView.vue'),
         },
       ],
     },
   ],
+})
+
+router.beforeEach((to) => {
+  const authStore = useAuthStore()
+  const isAuthenticated = authStore.isAuthenticated
+
+  if (to.name !== 'login' && to.name !== 'register' && !isAuthenticated) {
+    return { name: 'login' }
+  }
+
+  if ((to.name === 'login' || to.name === 'register') && isAuthenticated) {
+    if (authStore.isManager) return { name: 'dashboard' }
+    if (authStore.isDriver) return { name: 'driver-route' }
+    if (authStore.isClient) return { name: 'recipient-billing' }
+    return { name: 'dashboard' }
+  }
+
+  if (isAuthenticated) {
+    const path = to.path
+
+    let defaultRoute = { name: 'dashboard' }
+    if (authStore.isDriver) defaultRoute = { name: 'driver-route' }
+    if (authStore.isClient) defaultRoute = { name: 'recipient-billing' }
+
+    if (path.startsWith('/recipient') && !authStore.isClient) {
+      console.warn('Access denied: Client only area')
+      return defaultRoute
+    }
+
+    if (path.startsWith('/driver') && !authStore.isDriver) {
+      console.warn('Access denied: Driver only area')
+      return defaultRoute
+    }
+
+    const managerOnlyPaths = ['/dashboard', '/shipments', '/users', '/route-assignment']
+    if (managerOnlyPaths.some((p) => path.startsWith(p)) && !authStore.isManager) {
+      console.warn('Access denied: Manager only area')
+      return defaultRoute
+    }
+  }
+
+  return true
 })
 
 export default router

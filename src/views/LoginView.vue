@@ -5,11 +5,13 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseCheckbox from '@/components/ui/BaseCheckbox.vue'
 import IconEye from '@/components/icons/IconEye.vue'
 import AuthSidebar from '@/components/auth/AuthSidebar.vue'
-import apiClient from '@/api/axios.ts'
+import apiClient from '@/api/axios'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import axios from 'axios'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 const email = ref('')
 const password = ref('')
@@ -18,9 +20,24 @@ const showPassword = ref(false)
 const errorMessage = ref('')
 const isLoading = ref(false)
 
+const redirectUser = async () => {
+  const userRole = authStore.userRole
+  console.log('Redirecting user based on role:', userRole)
+  if (userRole === 'manager') {
+    await router.push('/dashboard')
+  } else if (userRole === 'driver') {
+    await router.push('/driver/route')
+  } else if (userRole === 'client') {
+    await router.push('/recipient/billing')
+  } else {
+    await router.push('/dashboard')
+  }
+}
+
 const handleLogin = async () => {
   errorMessage.value = ''
   isLoading.value = true
+  console.log('Attempting login for:', email.value)
 
   try {
     const response = await apiClient.post('/auth/login', {
@@ -28,29 +45,26 @@ const handleLogin = async () => {
       password: password.value,
     })
 
-    console.log('Login successful:', response.data)
-    const userRole = response.data.role
+    console.log('Login successful, setting user in store')
+    authStore.setUser(response.data)
 
-    if (userRole === 'manager') {
-      await router.push('/dashboard')
-    } else if (userRole === 'driver') {
-      await router.push('/driver/route')
-    } else if (userRole === 'client') {
-      await router.push('/recipient/billing')
-    } else {
-      console.warn('Unknown role:', userRole)
-      await router.push('/dashboard')
-    }
+    isLoading.value = false
+
+    await redirectUser()
   } catch (error: unknown) {
+    isLoading.value = false
+    console.error('Login error:', error)
     if (axios.isAxiosError(error)) {
       if (error.response?.data?.detail) {
         errorMessage.value = error.response.data.detail
+      } else if (error.code === 'ECONNABORTED') {
+        errorMessage.value = 'Request timed out. Please try again.'
       } else {
         errorMessage.value = 'Server connection error'
       }
+    } else {
+      errorMessage.value = 'An unexpected error occurred'
     }
-  } finally {
-    isLoading.value = false
   }
 }
 </script>

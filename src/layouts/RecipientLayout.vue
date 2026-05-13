@@ -2,9 +2,11 @@
 import AppLayout from '@/layouts/AppLayout.vue'
 
 const recipientLinks = [
+  { name: 'My Orders', path: '/recipient/orders', icon: 'Package' },
   { name: 'Billings & Reports', path: '/recipient/billing', icon: 'PackageCheck' },
+  { name: 'Create New Delivery', path: '/recipient/delivery/new', icon: 'Plus' },
   { name: 'Active Deliveries', path: '/recipient/active', icon: 'FileText' },
-  { name: 'Settings', path: '/settings', icon: 'Settings' },
+  { name: 'Settings', path: '/recipient/settings', icon: 'Settings' },
 ]
 </script>
 
