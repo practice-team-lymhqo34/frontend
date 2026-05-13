@@ -9,7 +9,9 @@ defineProps<{
 <template>
   <div class="flex flex-col gap-1 w-full">
     <label class="text-text-primary text-sm font-normal leading-[140%]">{{ label }}</label>
-    <div class="flex items-center gap-2 h-12 px-4 bg-white border-b border-border-default relative">
+    <div
+      class="flex items-center gap-2 h-12 px-4 bg-bg-surface border-b border-border-default relative"
+    >
       <select
         v-model="model"
         class="flex-1 bg-transparent text-base text-text-primary outline-none appearance-none cursor-pointer"

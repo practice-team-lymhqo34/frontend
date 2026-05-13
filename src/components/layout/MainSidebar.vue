@@ -2,6 +2,7 @@
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import IconLogo from '@/components/icons/IconLogo.vue'
 import apiClient from '@/api/axios'
+import { useAuthStore } from '@/stores/auth'
 import {
   Settings,
   Bell,
@@ -49,6 +50,7 @@ defineEmits<{
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 
 const handleLogout = async () => {
   try {
@@ -56,6 +58,7 @@ const handleLogout = async () => {
   } catch (error) {
     console.error('Помилка при виході:', error)
   } finally {
+    authStore.logout()
     router.push('/login')
   }
 }

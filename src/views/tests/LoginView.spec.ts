@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
+import { createPinia, setActivePinia } from 'pinia'
 import LoginView from '../LoginView.vue'
 
 vi.mock('@/components/ui/BaseInput.vue', () => ({
@@ -59,8 +60,11 @@ const createWrapper = () => {
     ],
   })
 
+  const pinia = createPinia()
+  setActivePinia(pinia)
+
   return mount(LoginView, {
-    global: { plugins: [router] },
+    global: { plugins: [router, pinia] },
   })
 }
 
