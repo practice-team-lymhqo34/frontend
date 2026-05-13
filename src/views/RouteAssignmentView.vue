@@ -98,11 +98,9 @@ const handleAssign = async () => {
       selectedDriver.value.vehicle.id,
     )
 
-    // Success logic
     assignmentSuccess.value = true
     const assignedOrderId = selectedOrder.value.id
 
-    // Remove from list after a short delay
     setTimeout(() => {
       unassignedOrders.value = unassignedOrders.value.filter((o) => o.id !== assignedOrderId)
       selectedOrder.value = null

@@ -9,7 +9,6 @@ export const ordersApi = {
 
   async getUnassignedOrders(): Promise<Order[]> {
     const orders = await this.getOrders()
-    // Filter for PENDING orders (case-insensitive)
     return orders.filter(
       (order) => order.status === 'PENDING' || (order.status as string) === 'pending',
     )
