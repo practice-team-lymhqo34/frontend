@@ -2,12 +2,13 @@ export interface Route {
   id: number
   order_id: number
   driver_id: number | null
+  vehicle_id: number | null
   started_at: string | null
   eta: string
   completed_at: string | null
   statuses?: RouteStatus[]
 }
-export type RouteStatusEnum = 'assigned' | 'loaded' | 'in_transit' | 'delivered' | 'failed'
+export type RouteStatusEnum = 'ASSIGNED' | 'LOADED' | 'IN_TRANSIT' | 'DELIVERED' | 'FAILED'
 
 export interface RouteStatus {
   id: number
@@ -20,6 +21,7 @@ export interface RouteOut {
   id: number
   order_id: number
   driver_id: number | null
+  vehicle_id: number | null
   started_at: string | null
   eta: string
   completed_at: string | null

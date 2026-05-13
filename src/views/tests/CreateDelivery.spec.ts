@@ -64,28 +64,34 @@ describe('CreateDelivery', () => {
       mockPost.mockResolvedValueOnce({ data: { id: 1 } })
       const { wrapper } = createWrapper()
 
-      await wrapper.find('input[type="text"]').setValue('Electronics to Kyiv')
-      await wrapper.find('input[type="number"]').setValue('5.5')
+      const inputs = wrapper.findAll('input')
+      await inputs.at(0)!.setValue('Electronics to Kyiv') // title
+      await inputs.at(1)!.setValue('5.5') // weight
+
       await wrapper.find('textarea').setValue('Fragile items')
       await wrapper.find('form').trigger('submit')
       await flushPromises()
 
       expect(mockPost).toHaveBeenCalledWith('/orders/', {
         title: 'Electronics to Kyiv',
-        weight: 5.5,
         description: 'Fragile items',
+        weight: 5.5,
+        is_template: false,
       })
     })
 
-    it('redirects to /dashboard on success', async () => {
+    it('redirects to /recipient/orders on success', async () => {
       mockPost.mockResolvedValueOnce({ data: { id: 1 } })
       const { wrapper, router } = createWrapper()
 
-      await wrapper.find('input[type="text"]').setValue('Test order')
+      const inputs = wrapper.findAll('input')
+      await inputs.at(0)!.setValue('Test order')
+      await inputs.at(1)!.setValue('1.0')
+
       await wrapper.find('form').trigger('submit')
       await flushPromises()
 
-      expect(router.currentRoute.value.path).toBe('/dashboard')
+      expect(router.currentRoute.value.path).toBe('/recipient/orders')
     })
   })
 
@@ -93,6 +99,10 @@ describe('CreateDelivery', () => {
     it('does not redirect if request fails', async () => {
       mockPost.mockRejectedValueOnce(new Error('Network Error'))
       const { wrapper, router } = createWrapper()
+
+      const inputs = wrapper.findAll('input')
+      await inputs.at(0)!.setValue('Title')
+      await inputs.at(1)!.setValue('1.0')
 
       await wrapper.find('form').trigger('submit')
       await flushPromises()
@@ -103,6 +113,10 @@ describe('CreateDelivery', () => {
     it('re-enables the submit button after a failed request', async () => {
       mockPost.mockRejectedValueOnce(new Error('Network Error'))
       const { wrapper } = createWrapper()
+
+      const inputs = wrapper.findAll('input')
+      await inputs.at(0)!.setValue('Title')
+      await inputs.at(1)!.setValue('1.0')
 
       await wrapper.find('form').trigger('submit')
       await flushPromises()
@@ -116,6 +130,10 @@ describe('CreateDelivery', () => {
       mockPost.mockReturnValueOnce(new Promise(() => {}))
       const { wrapper } = createWrapper()
 
+      const inputs = wrapper.findAll('input')
+      await inputs.at(0)!.setValue('Title')
+      await inputs.at(1)!.setValue('1.0')
+
       await wrapper.find('form').trigger('submit')
 
       expect(wrapper.find('button[type="submit"]').text()).toContain('Creating...')
@@ -125,6 +143,10 @@ describe('CreateDelivery', () => {
       mockPost.mockReturnValueOnce(new Promise(() => {}))
       const { wrapper } = createWrapper()
 
+      const inputs = wrapper.findAll('input')
+      await inputs.at(0)!.setValue('Title')
+      await inputs.at(1)!.setValue('1.0')
+
       await wrapper.find('form').trigger('submit')
 
       expect(wrapper.find('button[type="submit"]').attributes('disabled')).toBeDefined()
@@ -133,6 +155,10 @@ describe('CreateDelivery', () => {
     it('re-enables the submit button after request completes', async () => {
       mockPost.mockResolvedValueOnce({ data: {} })
       const { wrapper } = createWrapper()
+
+      const inputs = wrapper.findAll('input')
+      await inputs.at(0)!.setValue('Title')
+      await inputs.at(1)!.setValue('1.0')
 
       await wrapper.find('form').trigger('submit')
       await flushPromises()

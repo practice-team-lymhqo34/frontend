@@ -1,9 +1,4 @@
-export type OrderStatus =
-  | 'pending'
-  | 'in_transit'
-  | 'delivered'
-  | 'delayed'
-  | 'awaiting_confirmation'
+export type OrderStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELED'
 
 export interface Order {
   id: number
@@ -12,6 +7,9 @@ export interface Order {
   weight: number
   status: OrderStatus
   owner_id: number
+  origin_address: string
+  destination_address: string
+  is_template: boolean
   created_at: string
 }
 
@@ -19,5 +17,7 @@ export interface OrderCreate {
   title: string
   description: string | null
   weight: number
+  origin_address: string
+  destination_address: string
   is_template: boolean
 }
