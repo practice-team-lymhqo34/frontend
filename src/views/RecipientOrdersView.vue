@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import apiClient from '@/api/axios'
 import type { Order } from '@/types'
-import { Package, Search, Filter, Plus } from 'lucide-vue-next'
+import { Package, Search, Filter, Plus, ChevronRight } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -132,8 +132,12 @@ onMounted(fetchOrders)
           >
             <td class="py-4 px-6">
               <div class="font-bold text-text-primary">{{ order.title }}</div>
-              <div class="text-xs text-text-secondary truncate max-w-[200px]">
-                {{ order.description || 'No description' }}
+              <div class="text-[10px] text-text-secondary flex items-center gap-1 mt-1">
+                <span class="font-bold text-orange-400">FROM:</span>
+                <span class="truncate max-w-[100px]">{{ order.origin_address }}</span>
+                <ChevronRight class="w-2 h-2" />
+                <span class="font-bold text-green-500">TO:</span>
+                <span class="truncate max-w-[100px]">{{ order.destination_address }}</span>
               </div>
             </td>
             <td class="py-4 px-6 text-sm text-text-secondary">

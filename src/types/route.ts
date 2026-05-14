@@ -1,3 +1,5 @@
+import type { Order } from './order'
+
 export interface Route {
   id: number
   order_id: number
@@ -7,6 +9,7 @@ export interface Route {
   eta: string
   completed_at: string | null
   statuses?: RouteStatus[]
+  order?: Order
 }
 export type RouteStatusEnum = 'ASSIGNED' | 'LOADED' | 'IN_TRANSIT' | 'DELIVERED' | 'FAILED'
 
@@ -25,4 +28,5 @@ export interface RouteOut {
   started_at: string | null
   eta: string
   completed_at: string | null
+  order?: Order
 }

@@ -7,6 +7,13 @@ interface User {
   full_name: string
   role: 'client' | 'manager' | 'driver'
   phone_number: string
+  vehicle?: {
+    id: number
+    brand: string
+    model: string
+    license_plate: string
+    max_weight: number
+  }
 }
 
 export const useAuthStore = defineStore('auth', () => {

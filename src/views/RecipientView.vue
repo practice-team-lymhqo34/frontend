@@ -1,31 +1,43 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { invoicesApi } from '@/api/invoices'
+import type { Invoice } from '@/types/invoice'
+import { Loader2, AlertCircle } from 'lucide-vue-next'
 
-const invoices = ref([
-  {
-    id: '#INV-001',
-    date: '01 Mar 2026',
-    amount: '4,500 UAH',
-    status: 'Paid',
-  },
-  {
-    id: '#INV-002',
-    date: '01 Mar 2026',
-    amount: '4,500 UAH',
-    status: 'Pending',
-  },
-  {
-    id: '#INV-003',
-    date: '01 Mar 2026',
-    amount: '4,500 UAH',
-    status: 'Paid',
-  },
-])
+const invoices = ref<Invoice[]>([])
+const isLoading = ref(true)
+const error = ref<string | null>(null)
 
-const getStatusClasses = (status: string) => {
-  if (status === 'Paid') return 'bg-green-100 text-green-600'
-  if (status === 'Pending') return 'bg-orange-50 text-orange-500'
-  return 'bg-gray-100 text-gray-600'
+const fetchInvoices = async () => {
+  isLoading.value = true
+  error.value = null
+  try {
+    invoices.value = await invoicesApi.getInvoices()
+  } catch (err) {
+    console.error('Failed to fetch invoices:', err)
+    error.value = 'Failed to load billing data. Please try again later.'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchInvoices()
+})
+
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('uk-UA', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+const formatMonth = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('uk-UA', {
+    month: 'long',
+    year: 'numeric',
+  })
 }
 </script>
 
@@ -33,16 +45,23 @@ const getStatusClasses = (status: string) => {
   <div class="p-8 w-full max-w-7xl mx-auto font-roboto text-[#333333]">
     <h1 class="text-[32px] font-bold mb-8">Billing Dashboard</h1>
 
+    <div
+      v-if="error"
+      class="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg flex items-center gap-2"
+    >
+      <AlertCircle class="w-5 h-5" />
+      {{ error }}
+    </div>
+
     <div class="mb-8">
-      <h2 class="text-lg font-bold text-gray-700 mb-1">TOTAL SPENT (MARCH): 12,450 UAH</h2>
-      <p class="text-gray-500 text-sm">Active Deliveries: 4</p>
-      <p class="text-gray-500 text-sm">
-        Unpaid Invoices: <span class="text-red-500 font-medium">1</span>
-      </p>
+      <h2 class="text-lg font-bold text-gray-700 mb-1 uppercase tracking-tight">
+        Financial Overview
+      </h2>
+      <p class="text-gray-500 text-sm">Review your monthly logistics expenses and invoices.</p>
     </div>
 
     <div class="mb-12">
-      <h2 class="text-[28px] font-bold mb-6">Monthly Expenses (UAH)</h2>
+      <h2 class="text-[28px] font-bold mb-6">Monthly Expenses (Mock Data)</h2>
 
       <div class="relative w-full h-[350px] border-l border-b border-gray-200">
         <div class="absolute inset-0 flex flex-col justify-between">
@@ -80,21 +99,46 @@ const getStatusClasses = (status: string) => {
             stroke="#1E73BE"
             stroke-width="2"
           />
-          <circle cx="160" cy="230" r="4" fill="white" stroke="#1E73BE" stroke-width="2" />
-          <circle cx="250" cy="280" r="4" fill="white" stroke="#1E73BE" stroke-width="2" />
-          <circle cx="410" cy="190" r="4" fill="white" stroke="#1E73BE" stroke-width="2" />
         </svg>
       </div>
     </div>
 
     <div class="w-full">
-      <table class="w-full text-left border-collapse">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">Invoices</h2>
+        <button
+          @click="fetchInvoices"
+          class="text-sm text-brand-primary hover:underline flex items-center gap-1"
+          :disabled="isLoading"
+        >
+          <Loader2 v-if="isLoading" class="w-4 h-4 animate-spin" />
+          Refresh
+        </button>
+      </div>
+
+      <div
+        v-if="isLoading"
+        class="flex flex-col items-center justify-center py-20 bg-gray-50 rounded-xl border border-dashed border-gray-200"
+      >
+        <Loader2 class="w-10 h-10 text-brand-primary animate-spin mb-4" />
+        <p class="text-gray-500 font-medium">Loading your invoices...</p>
+      </div>
+
+      <div
+        v-else-if="invoices.length === 0"
+        class="flex flex-col items-center justify-center py-20 bg-gray-50 rounded-xl border border-dashed border-gray-200"
+      >
+        <p class="text-gray-500 font-medium">No invoices found for your account.</p>
+      </div>
+
+      <table v-else class="w-full text-left border-collapse">
         <thead>
           <tr class="border-b border-gray-200">
-            <th class="py-4 px-2 text-sm font-bold text-gray-600">Invoice ID</th>
-            <th class="py-4 px-2 text-sm font-bold text-gray-600">Date</th>
-            <th class="py-4 px-2 text-sm font-bold text-gray-600">Amount</th>
-            <th class="py-4 px-2 text-sm font-bold text-gray-600">Status</th>
+            <th class="py-4 px-2 text-sm font-bold text-gray-600">ID</th>
+            <th class="py-4 px-2 text-sm font-bold text-gray-600">Billing Period</th>
+            <th class="py-4 px-2 text-sm font-bold text-gray-600">Shipments</th>
+            <th class="py-4 px-2 text-sm font-bold text-gray-600">Total Weight</th>
+            <th class="py-4 px-2 text-sm font-bold text-gray-600">Generated At</th>
             <th class="py-4 px-2 text-sm font-bold text-gray-600">Action</th>
           </tr>
         </thead>
@@ -104,22 +148,20 @@ const getStatusClasses = (status: string) => {
             :key="invoice.id"
             class="border-b border-gray-100 hover:bg-gray-50 transition-colors"
           >
-            <td class="py-4 px-2 text-sm text-gray-700">{{ invoice.id }}</td>
-            <td class="py-4 px-2 text-sm text-gray-600">{{ invoice.date }}</td>
-            <td class="py-4 px-2 text-sm text-gray-600">{{ invoice.amount }}</td>
-            <td class="py-4 px-2">
-              <span
-                class="px-3 py-1 rounded-full text-xs font-medium"
-                :class="getStatusClasses(invoice.status)"
-              >
-                {{ invoice.status }}
-              </span>
+            <td class="py-4 px-2 text-sm text-gray-700 font-medium">
+              #INV-{{ String(invoice.id).padStart(3, '0') }}
             </td>
+            <td class="py-4 px-2 text-sm text-gray-600 capitalize">
+              {{ formatMonth(invoice.billing_month) }}
+            </td>
+            <td class="py-4 px-2 text-sm text-gray-600">{{ invoice.total_shipment }}</td>
+            <td class="py-4 px-2 text-sm text-gray-600">{{ invoice.total_weight }} kg</td>
+            <td class="py-4 px-2 text-sm text-gray-600">{{ formatDate(invoice.generated_at) }}</td>
             <td class="py-4 px-2">
               <button
                 class="bg-[#F0F5FA] text-[#083672] px-4 py-1.5 rounded-full text-xs font-semibold hover:bg-blue-100 transition-colors"
               >
-                Download PDF
+                View Details
               </button>
             </td>
           </tr>
@@ -128,3 +170,17 @@ const getStatusClasses = (status: string) => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>
