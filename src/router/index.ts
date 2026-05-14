@@ -8,6 +8,7 @@ import RecipientView from '@/views/RecipientView.vue'
 import CreateDelivery from '@/views/CreateDelivery.vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import DashboardView from '@/views/DashboardView.vue'
+import ShipmentsListView from '@/views/ShipmentsListView.vue'
 import { useAuthStore } from '../stores/auth'
 import ShipmentDetailsView from '@/views/ShipmentDetailsView.vue'
 
@@ -40,7 +41,7 @@ const router = createRouter({
         {
           path: 'shipments',
           name: 'shipments',
-          component: ShipmentDetailsView,
+          component: ShipmentsListView,
         },
         {
           path: 'shipments/:id',
