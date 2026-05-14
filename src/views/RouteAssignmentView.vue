@@ -14,9 +14,12 @@ import { ordersApi } from '@/api/orders'
 import type { Order } from '@/types/order'
 import type { User as UserType } from '@/types/user'
 import type { Vehicle } from '@/types/vehicle'
+import axios from 'axios'
 
 const unassignedOrders = ref<Order[]>([])
+const drivers = ref<(UserType & { vehicle?: Vehicle })[]>([])
 const isLoadingOrders = ref(true)
+const isLoadingDrivers = ref(true)
 
 onMounted(async () => {
   try {
@@ -26,55 +29,22 @@ onMounted(async () => {
   } finally {
     isLoadingOrders.value = false
   }
-})
 
-const drivers = ref<(UserType & { vehicle?: Vehicle })[]>([
-  {
-    id: 1,
-    email: 'driver1@logiflow.com',
-    role: 'driver',
-    full_name: 'Oleksandr Kovalenko',
-    phone_number: '+380501112233',
-    created_at: '',
-    vehicle: {
-      id: 1,
-      driver_id: 1,
-      brand: 'Mercedes-Benz',
-      model: 'Sprinter',
-      max_weight: 1500,
-      max_volume: 10,
-      license_plate: 'AA 1234 BB',
-      fuel_consumption: 12,
-      current_mileage: 45000,
-      maintenance_interval: 15000,
-    },
-  },
-  {
-    id: 2,
-    email: 'driver2@logiflow.com',
-    role: 'driver',
-    full_name: 'Ivan Petrov',
-    phone_number: '+380674445566',
-    created_at: '',
-    vehicle: {
-      id: 2,
-      driver_id: 2,
-      brand: 'Volkswagen',
-      model: 'Crafter',
-      max_weight: 1000,
-      max_volume: 8,
-      license_plate: 'BC 5678 CB',
-      fuel_consumption: 10,
-      current_mileage: 32000,
-      maintenance_interval: 15000,
-    },
-  },
-])
+  try {
+    const fetchedDrivers = await routesApi.getDrivers()
+    drivers.value = fetchedDrivers as (UserType & { vehicle?: Vehicle })[]
+  } catch (error) {
+    console.error('Failed to fetch drivers:', error)
+  } finally {
+    isLoadingDrivers.value = false
+  }
+})
 
 const selectedOrder = ref<Order | null>(null)
 const selectedDriver = ref<(UserType & { vehicle?: Vehicle }) | null>(null)
 const isSubmitting = ref(false)
 const assignmentSuccess = ref(false)
+const assignmentError = ref('')
 
 const canAssign = computed(() => {
   if (!selectedOrder.value || !selectedDriver.value?.vehicle) return false
@@ -91,12 +61,9 @@ const handleAssign = async () => {
     return
 
   isSubmitting.value = true
+  assignmentError.value = ''
   try {
-    await routesApi.assignRoute(
-      selectedOrder.value.id,
-      selectedDriver.value.id,
-      selectedDriver.value.vehicle.id,
-    )
+    await routesApi.assignRoute(selectedOrder.value.id, selectedDriver.value.id)
 
     assignmentSuccess.value = true
     const assignedOrderId = selectedOrder.value.id
@@ -107,8 +74,14 @@ const handleAssign = async () => {
       selectedDriver.value = null
       assignmentSuccess.value = false
     }, 2000)
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Assignment failed', error)
+
+    if (axios.isAxiosError(error) && error.response?.status === 409) {
+      assignmentError.value = 'This order has already been assigned to another driver.'
+    } else {
+      assignmentError.value = 'Failed to assign route. Please try again later.'
+    }
   } finally {
     isSubmitting.value = false
   }
@@ -167,8 +140,17 @@ const handleAssign = async () => {
             >
               <div class="flex justify-between items-start mb-2">
                 <h3 class="font-bold text-lg">{{ order.title }}</h3>
-                <span class="text-sm font-bold text-brand-primary">{{ order.weight }} kg</span>
+                <div class="flex flex-col items-end">
+                  <span class="text-sm font-bold text-brand-primary">{{ order.weight }} kg</span>
+                  <span
+                    v-if="order.status !== 'PENDING'"
+                    class="text-[10px] bg-gray-200 text-gray-600 px-2 py-0.5 rounded mt-1 font-black uppercase"
+                  >
+                    Already Assigned
+                  </span>
+                </div>
               </div>
+
               <div class="flex items-center gap-4 text-sm text-text-secondary">
                 <div class="flex items-center gap-1">
                   <div class="w-2 h-2 rounded-full bg-orange-400"></div>
@@ -194,11 +176,27 @@ const handleAssign = async () => {
         </div>
 
         <div
-          v-if="!selectedOrder"
+          v-if="isLoadingDrivers"
+          class="flex flex-col items-center justify-center py-12 bg-bg-canvas border border-dashed border-border-default rounded-lg"
+        >
+          <Loader2 class="w-8 h-8 text-brand-primary animate-spin mb-2" />
+          <p class="text-text-secondary text-sm">Loading drivers...</p>
+        </div>
+
+        <div
+          v-else-if="!selectedOrder"
           class="bg-bg-surface border border-dashed border-border-default rounded-lg p-12 text-center"
         >
           <Package class="w-12 h-12 text-text-placeholder mx-auto mb-4" />
           <p class="text-text-secondary">Select an order first to see compatible drivers</p>
+        </div>
+
+        <div
+          v-else-if="drivers.length === 0"
+          class="bg-bg-surface border border-dashed border-border-default rounded-lg p-12 text-center"
+        >
+          <User class="w-12 h-12 text-text-placeholder mx-auto mb-4" />
+          <p class="text-text-secondary">No drivers found in the system.</p>
         </div>
 
         <div v-else class="space-y-4">
@@ -223,12 +221,15 @@ const handleAssign = async () => {
                 <div class="flex justify-between items-start">
                   <div>
                     <h3 class="font-bold">{{ driver.full_name }}</h3>
-                    <p class="text-xs text-text-secondary">
+                    <p v-if="driver.vehicle" class="text-xs text-text-secondary">
                       {{ driver.vehicle?.brand }} {{ driver.vehicle?.model }} •
                       {{ driver.vehicle?.license_plate }}
                     </p>
+                    <p v-else class="text-xs text-orange-500 font-bold italic">
+                      No vehicle assigned
+                    </p>
                   </div>
-                  <div class="text-right text-xs">
+                  <div v-if="driver.vehicle" class="text-right text-xs">
                     <span class="font-bold text-text-primary"
                       >Cap: {{ driver.vehicle?.max_weight }} kg</span
                     >
@@ -261,11 +262,22 @@ const handleAssign = async () => {
               <div class="flex-1 p-3 bg-bg-surface rounded border border-border-default text-sm">
                 <div class="text-xs text-text-secondary mb-1">Order</div>
                 <div class="font-bold">{{ selectedOrder.title }}</div>
+                <div class="text-[10px] text-text-secondary mt-1 flex flex-col gap-0.5">
+                  <span class="truncate" title="Origin">🏠 {{ selectedOrder.origin_address }}</span>
+                  <span class="truncate" title="Destination"
+                    >📍 {{ selectedOrder.destination_address }}</span
+                  >
+                </div>
               </div>
               <ChevronRight class="w-4 h-4 text-text-placeholder" />
               <div class="flex-1 p-3 bg-bg-surface rounded border border-border-default text-sm">
                 <div class="text-xs text-text-secondary mb-1">Driver</div>
                 <div class="font-bold">{{ selectedDriver.full_name }}</div>
+                <div class="text-[10px] text-text-secondary mt-1">
+                  🚛 {{ selectedDriver.vehicle?.brand }} ({{
+                    selectedDriver.vehicle?.license_plate
+                  }})
+                </div>
               </div>
             </div>
 
@@ -281,6 +293,13 @@ const handleAssign = async () => {
                     : 'bg-border-default text-text-placeholder cursor-not-allowed',
               ]"
             >
+              <p
+                v-if="assignmentError"
+                class="mt-4 p-3 bg-red-50 border border-red-200 text-red-600 text-sm font-bold rounded flex items-center gap-2"
+              >
+                8 <AlertCircle class="w-4 h-4" /> 9 {{ assignmentError }} 10
+              </p>
+
               <template v-if="isSubmitting">
                 <div
                   class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"

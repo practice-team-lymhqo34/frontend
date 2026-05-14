@@ -16,6 +16,8 @@ interface OrderForm {
   weight: string
   volume: string
   quantity: string
+  origin_address: string
+  destination_address: string
   isTemplate: boolean
 }
 
@@ -30,6 +32,8 @@ const showTemplates = ref(false)
 const errors = reactive({
   title: '',
   weight: '',
+  origin_address: '',
+  destination_address: '',
 })
 
 const savedDraft = localStorage.getItem(STORAGE_KEY)
@@ -43,6 +47,8 @@ const form = reactive<OrderForm>(
         weight: '',
         volume: '',
         quantity: '',
+        origin_address: '',
+        destination_address: '',
         isTemplate: false,
       },
 )
@@ -59,6 +65,8 @@ const applyTemplate = (template: Order) => {
   form.title = template.title
   form.description = template.description || ''
   form.weight = template.weight.toString()
+  form.origin_address = template.origin_address || ''
+  form.destination_address = template.destination_address || ''
   form.volume = ''
   form.quantity = ''
   form.isTemplate = true
@@ -66,6 +74,8 @@ const applyTemplate = (template: Order) => {
   // Clear errors when template is applied
   errors.title = ''
   errors.weight = ''
+  errors.origin_address = ''
+  errors.destination_address = ''
 }
 
 watch(
@@ -83,6 +93,20 @@ watch(
 )
 
 watch(
+  () => form.origin_address,
+  () => {
+    if (form.origin_address) errors.origin_address = ''
+  },
+)
+
+watch(
+  () => form.destination_address,
+  () => {
+    if (form.destination_address) errors.destination_address = ''
+  },
+)
+
+watch(
   form,
   (newVal) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newVal))
@@ -94,6 +118,8 @@ const submitOrder = async () => {
   // Clear previous errors
   errors.title = ''
   errors.weight = ''
+  errors.origin_address = ''
+  errors.destination_address = ''
 
   let hasError = false
   if (!form.title) {
@@ -102,6 +128,14 @@ const submitOrder = async () => {
   }
   if (!form.weight) {
     errors.weight = 'Weight is required'
+    hasError = true
+  }
+  if (!form.origin_address) {
+    errors.origin_address = 'Origin address is required'
+    hasError = true
+  }
+  if (!form.destination_address) {
+    errors.destination_address = 'Destination address is required'
     hasError = true
   }
 
@@ -121,6 +155,8 @@ const submitOrder = async () => {
       title: form.title,
       description: enrichedDescription,
       weight: parseFloat(form.weight),
+      origin_address: form.origin_address,
+      destination_address: form.destination_address,
       is_template: form.isTemplate,
     })
     localStorage.removeItem(STORAGE_KEY)
@@ -202,6 +238,21 @@ const submitOrder = async () => {
             placeholder="e.g. Weekly Electronics Supply"
             :error="errors.title"
           />
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <BaseInput
+              v-model="form.origin_address"
+              label="Origin Address *"
+              placeholder="e.g. 123 Main St, City, Country"
+              :error="errors.origin_address"
+            />
+            <BaseInput
+              v-model="form.destination_address"
+              label="Destination Address *"
+              placeholder="e.g. 456 Delivery Ave, City, Country"
+              :error="errors.destination_address"
+            />
+          </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
             <BaseInput
