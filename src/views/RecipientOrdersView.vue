@@ -1,14 +1,38 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import apiClient from '@/api/axios'
+import { ordersApi } from '@/api/orders'
 import type { Order } from '@/types'
 import { Package, Search, Filter, Plus, ChevronRight } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
+import BaseModal from '@/components/ui/BaseModal.vue'
 
 const router = useRouter()
 const orders = ref<Order[]>([])
 const isLoading = ref(true)
 const error = ref('')
+
+const showCancelModal = ref(false)
+const orderToCancel = ref<number | null>(null)
+
+const confirmCancel = (e: Event, orderId: number) => {
+  e.stopPropagation()
+  orderToCancel.value = orderId
+  showCancelModal.value = true
+}
+
+const handleCancel = async () => {
+  if (!orderToCancel.value) return
+
+  try {
+    await ordersApi.cancelOrder(orderToCancel.value)
+    showCancelModal.value = false
+    orderToCancel.value = null
+    await fetchOrders()
+  } catch (err) {
+    console.error('Failed to cancel order:', err)
+  }
+}
 
 const fetchOrders = async () => {
   isLoading.value = true
@@ -25,7 +49,8 @@ const fetchOrders = async () => {
 }
 
 const getStatusClasses = (status: string) => {
-  switch (status) {
+  const s = status.toUpperCase()
+  switch (s) {
     case 'PENDING':
       return 'bg-orange-100 text-orange-600'
     case 'IN_PROGRESS':
@@ -43,15 +68,17 @@ onMounted(fetchOrders)
 </script>
 
 <template>
-  <div class="p-8 font-roboto text-text-primary">
-    <div class="flex justify-between items-center mb-8">
+  <div class="p-4 md:p-8 font-roboto text-text-primary max-w-7xl mx-auto">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
       <div>
-        <h1 class="text-[32px] font-bold">My Orders</h1>
-        <p class="text-text-secondary">Manage and track your delivery requests</p>
+        <h1 class="text-2xl md:text-[32px] font-bold">My Orders</h1>
+        <p class="text-text-secondary text-sm md:text-base">
+          Manage and track your delivery requests
+        </p>
       </div>
       <button
         @click="router.push('/recipient/delivery/new')"
-        class="flex items-center gap-2 bg-btn-primary-default text-white px-6 py-3 rounded font-bold hover:bg-btn-primary-hover transition-colors"
+        class="w-full sm:w-auto flex items-center justify-center gap-2 bg-btn-primary-default text-white px-6 py-3 rounded font-bold hover:bg-btn-primary-hover transition-colors"
       >
         <Plus class="w-5 h-5" /> Create New Delivery
       </button>
@@ -71,7 +98,7 @@ onMounted(fetchOrders)
 
     <div
       v-else-if="orders.length === 0"
-      class="bg-bg-canvas border border-border-default rounded-lg p-20 text-center"
+      class="bg-bg-canvas border border-border-default rounded-lg p-10 md:p-20 text-center"
     >
       <Package class="w-16 h-16 text-text-placeholder mx-auto mb-4" />
       <h3 class="text-xl font-bold mb-2">No orders found</h3>
@@ -85,81 +112,108 @@ onMounted(fetchOrders)
     </div>
 
     <div v-else class="bg-bg-canvas border border-border-default rounded-lg overflow-hidden">
-      <div class="p-4 border-b border-border-default flex gap-4">
+      <div class="p-4 border-b border-border-default flex flex-col sm:flex-row gap-4">
         <div class="relative flex-1">
           <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-placeholder" />
           <input
             type="text"
             placeholder="Search by title..."
-            class="w-full pl-10 pr-4 py-2 bg-bg-surface border border-border-default rounded outline-none focus:border-brand-primary transition-colors"
+            class="w-full pl-10 pr-4 py-2 bg-bg-surface border border-border-default rounded outline-none focus:border-brand-primary transition-colors text-sm"
           />
         </div>
         <button
-          class="flex items-center gap-2 px-4 py-2 border border-border-default rounded hover:bg-bg-surface transition-colors"
+          class="flex items-center justify-center gap-2 px-4 py-2 border border-border-default rounded hover:bg-bg-surface transition-colors text-sm"
         >
           <Filter class="w-4 h-4" /> Filter
         </button>
       </div>
 
-      <table class="w-full text-left border-collapse">
-        <thead>
-          <tr class="bg-bg-surface border-b border-border-default">
-            <th class="py-4 px-6 text-sm font-bold text-text-secondary uppercase tracking-wider">
-              Order
-            </th>
-            <th class="py-4 px-6 text-sm font-bold text-text-secondary uppercase tracking-wider">
-              Date
-            </th>
-            <th class="py-4 px-6 text-sm font-bold text-text-secondary uppercase tracking-wider">
-              Weight
-            </th>
-            <th class="py-4 px-6 text-sm font-bold text-text-secondary uppercase tracking-wider">
-              Status
-            </th>
-            <th
-              class="py-4 px-6 text-sm font-bold text-text-secondary uppercase tracking-wider text-right"
-            >
-              Action
-            </th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-border-default">
-          <tr
-            v-for="order in orders"
-            :key="order.id"
-            class="hover:bg-bg-surface transition-colors cursor-pointer"
-            @click="router.push(`/shipments/${order.id}`)"
-          >
-            <td class="py-4 px-6">
-              <div class="font-bold text-text-primary">{{ order.title }}</div>
-              <div class="text-[10px] text-text-secondary flex items-center gap-1 mt-1">
-                <span class="font-bold text-orange-400">FROM:</span>
-                <span class="truncate max-w-[100px]">{{ order.origin_address }}</span>
-                <ChevronRight class="w-2 h-2" />
-                <span class="font-bold text-green-500">TO:</span>
-                <span class="truncate max-w-[100px]">{{ order.destination_address }}</span>
-              </div>
-            </td>
-            <td class="py-4 px-6 text-sm text-text-secondary">
-              {{ new Date(order.created_at).toLocaleDateString() }}
-            </td>
-            <td class="py-4 px-6 text-sm text-text-primary">{{ order.weight }} kg</td>
-            <td class="py-4 px-6">
-              <span
-                class="px-3 py-1 rounded-full text-xs font-bold uppercase"
-                :class="getStatusClasses(order.status)"
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse min-w-[700px]">
+          <thead>
+            <tr class="bg-bg-surface border-b border-border-default">
+              <th class="py-4 px-6 text-xs font-bold text-text-secondary uppercase tracking-wider">
+                Order
+              </th>
+              <th class="py-4 px-6 text-xs font-bold text-text-secondary uppercase tracking-wider">
+                Date
+              </th>
+              <th class="py-4 px-6 text-xs font-bold text-text-secondary uppercase tracking-wider">
+                Weight
+              </th>
+              <th class="py-4 px-6 text-xs font-bold text-text-secondary uppercase tracking-wider">
+                Status
+              </th>
+              <th
+                class="py-4 px-6 text-xs font-bold text-text-secondary uppercase tracking-wider text-right"
               >
-                {{ order.status }}
-              </span>
-            </td>
-            <td class="py-4 px-6 text-right">
-              <button class="text-brand-primary font-bold text-sm hover:underline">
-                View Details
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+                Action
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border-default">
+            <tr
+              v-for="order in orders"
+              :key="order.id"
+              class="hover:bg-bg-surface transition-colors cursor-pointer group"
+              @click="router.push(`/shipments/${order.id}`)"
+            >
+              <td class="py-4 px-6">
+                <div
+                  class="font-bold text-text-primary group-hover:text-brand-primary transition-colors"
+                >
+                  {{ order.title }}
+                </div>
+                <div class="text-[10px] text-text-secondary flex items-center gap-1 mt-1">
+                  <span class="font-bold text-orange-400">FROM:</span>
+                  <span class="truncate max-w-[80px] sm:max-w-[150px]">{{
+                    order.origin_address
+                  }}</span>
+                  <ChevronRight class="w-2 h-2" />
+                  <span class="font-bold text-green-500">TO:</span>
+                  <span class="truncate max-w-[80px] sm:max-w-[150px]">{{
+                    order.destination_address
+                  }}</span>
+                </div>
+              </td>
+              <td class="py-4 px-6 text-sm text-text-secondary">
+                {{ new Date(order.created_at).toLocaleDateString() }}
+              </td>
+              <td class="py-4 px-6 text-sm text-text-primary font-medium">{{ order.weight }} kg</td>
+              <td class="py-4 px-6">
+                <span
+                  class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter"
+                  :class="getStatusClasses(order.status)"
+                >
+                  {{ order.status }}
+                </span>
+              </td>
+              <td class="py-4 px-6 text-right whitespace-nowrap">
+                <button
+                  v-if="order.status.toUpperCase() === 'PENDING'"
+                  @click="confirmCancel($event, order.id)"
+                  class="text-red-500 font-bold text-xs hover:underline mr-4"
+                >
+                  Cancel
+                </button>
+                <button class="text-brand-primary font-bold text-xs hover:underline">
+                  View Details
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <BaseModal
+        :show="showCancelModal"
+        title="Cancel Order"
+        message="Are you sure you want to cancel this delivery request? This action cannot be undone."
+        confirm-text="Yes, Cancel Order"
+        variant="danger"
+        @confirm="handleCancel"
+        @cancel="showCancelModal = false"
+      />
     </div>
   </div>
 </template>
