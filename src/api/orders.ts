@@ -20,4 +20,12 @@ export const ordersApi = {
     })
     return response.data
   },
+
+  async cancelOrder(orderId: number): Promise<void> {
+    await apiClient.patch(`/dashboard/orders/${orderId}`, { status: 'canceled' })
+  },
+
+  async deleteOrder(orderId: number): Promise<void> {
+    await apiClient.delete(`/dashboard/orders/${orderId}`)
+  },
 }
