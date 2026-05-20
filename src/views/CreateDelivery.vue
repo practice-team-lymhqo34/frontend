@@ -32,6 +32,8 @@ const showTemplates = ref(false)
 const errors = reactive({
   title: '',
   weight: '',
+  volume: '',
+  quantity: '',
   origin_address: '',
   destination_address: '',
 })
@@ -71,24 +73,35 @@ const applyTemplate = (template: Order) => {
   form.quantity = ''
   form.isTemplate = true
   showTemplates.value = false
-  // Clear errors when template is applied
-  errors.title = ''
-  errors.weight = ''
-  errors.origin_address = ''
-  errors.destination_address = ''
+  // Clear all errors
+  Object.keys(errors).forEach((key) => (errors[key as keyof typeof errors] = ''))
 }
 
 watch(
   () => form.title,
   () => {
-    if (form.title) errors.title = ''
+    if (form.title.length >= 3) errors.title = ''
   },
 )
 
 watch(
   () => form.weight,
   () => {
-    if (form.weight) errors.weight = ''
+    if (parseFloat(form.weight) > 0) errors.weight = ''
+  },
+)
+
+watch(
+  () => form.volume,
+  () => {
+    if (!form.volume || parseFloat(form.volume) > 0) errors.volume = ''
+  },
+)
+
+watch(
+  () => form.quantity,
+  () => {
+    if (!form.quantity || parseInt(form.quantity) > 0) errors.quantity = ''
   },
 )
 
@@ -116,20 +129,32 @@ watch(
 
 const submitOrder = async () => {
   // Clear previous errors
-  errors.title = ''
-  errors.weight = ''
-  errors.origin_address = ''
-  errors.destination_address = ''
+  Object.keys(errors).forEach((key) => (errors[key as keyof typeof errors] = ''))
 
   let hasError = false
-  if (!form.title) {
-    errors.title = 'Title is required'
+  if (!form.title || form.title.length < 3) {
+    errors.title = 'Title must be at least 3 characters'
+    hasError = true
+  } else if (form.title.length > 100) {
+    errors.title = 'Title must be less than 100 characters'
     hasError = true
   }
-  if (!form.weight) {
-    errors.weight = 'Weight is required'
+
+  if (!form.weight || parseFloat(form.weight) <= 0) {
+    errors.weight = 'Weight must be a positive number'
     hasError = true
   }
+
+  if (form.volume && parseFloat(form.volume) <= 0) {
+    errors.volume = 'Volume must be a positive number'
+    hasError = true
+  }
+
+  if (form.quantity && parseInt(form.quantity) <= 0) {
+    errors.quantity = 'Quantity must be at least 1'
+    hasError = true
+  }
+
   if (!form.origin_address) {
     errors.origin_address = 'Origin address is required'
     hasError = true
@@ -148,8 +173,7 @@ const submitOrder = async () => {
   errorMessage.value = ''
 
   try {
-    // We send volume and quantity in the description since they aren't in the DB schema yet
-    const enrichedDescription = `[Qty: ${form.quantity || 'N/A'}, Vol: ${form.volume || 'N/A'}] ${form.description || ''}`
+    const enrichedDescription = `Quantity: ${form.quantity || 'N/A'}, Volume: ${form.volume || 'N/A'}. ${form.description || ''}`
 
     await apiClient.post('/orders/', {
       title: form.title,
@@ -183,7 +207,6 @@ const submitOrder = async () => {
         <p class="text-gray-500">Specify details for your shipment</p>
       </div>
 
-      <!-- Template Selector -->
       <div class="relative" v-if="templates.length > 0">
         <button
           @click="showTemplates = !showTemplates"
@@ -262,8 +285,20 @@ const submitOrder = async () => {
               placeholder="0.0"
               :error="errors.weight"
             />
-            <BaseInput v-model="form.volume" label="Volume (m³)" type="number" placeholder="0.0" />
-            <BaseInput v-model="form.quantity" label="Quantity" type="number" placeholder="1" />
+            <BaseInput
+              v-model="form.volume"
+              label="Volume (m³)"
+              type="number"
+              placeholder="0.0"
+              :error="errors.volume"
+            />
+            <BaseInput
+              v-model="form.quantity"
+              label="Quantity"
+              type="number"
+              placeholder="1"
+              :error="errors.quantity"
+            />
           </div>
 
           <div class="flex flex-col gap-1 w-full">

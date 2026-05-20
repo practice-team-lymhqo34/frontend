@@ -2,12 +2,16 @@
 import type { Order, Route, User } from '@/types'
 import ShipmentPackageDetails from '@/components/shipment-details/ShipmentPackageDetails.vue'
 import ShipmentStatusTimeline from '@/components/shipment-details/ShipmentStatusTimeline.vue'
-import { Edit, Printer, ArrowLeft } from 'lucide-vue-next'
 import { useRouter, useRoute } from 'vue-router'
 import { ref, onMounted } from 'vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseModal from '@/components/ui/BaseModal.vue'
 import apiClient from '@/api/axios'
+import { ordersApi } from '@/api/orders'
+import { useAuthStore } from '@/stores/auth'
+import { Trash2, ArrowLeft, Navigation } from 'lucide-vue-next'
 
+const authStore = useAuthStore()
 const router = useRouter()
 const routePath = useRoute()
 const orderId = routePath.params.id
@@ -16,21 +20,76 @@ const order = ref<Order | null>(null)
 const route = ref<Route | null>(null)
 const assignedDriver = ref<User | null>(null)
 const isLoading = ref(true)
+const isCancelling = ref(false)
+const showCancelModal = ref(false)
+const showErrorModal = ref(false)
+const modalErrorMessage = ref('')
 const error = ref('')
+
+const handleCancel = async () => {
+  if (!order.value) return
+  showCancelModal.value = false
+  isCancelling.value = true
+  try {
+    await ordersApi.cancelOrder(order.value.id)
+    await fetchData()
+  } catch (err) {
+    console.error('Failed to cancel order:', err)
+    modalErrorMessage.value = 'Failed to cancel order. It might already be in progress.'
+    showErrorModal.value = true
+  } finally {
+    isCancelling.value = false
+  }
+}
 
 const fetchData = async () => {
   isLoading.value = true
   error.value = ''
   try {
-    const orderRes = await apiClient.get(`/dashboard/orders/${orderId}`)
-    order.value = orderRes.data
+    let orderData: Order | null = null
+
+    if (authStore.isManager) {
+      const allOrdersRes = await apiClient.get('/dashboard/orders')
+      orderData = allOrdersRes.data.find((o: Order) => o.id === Number(orderId)) || null
+    } else {
+      try {
+        const orderRes = await apiClient.get(`/dashboard/orders/${orderId}`)
+        orderData = orderRes.data
+      } catch {
+        console.warn('Could not fetch order directly, likely access denied.')
+      }
+    }
+
+    if (!orderData) {
+      throw new Error('Order not found')
+    }
+    order.value = orderData
 
     const routeRes = await apiClient.get(`/dashboard/routes`, {
       params: { order_id: orderId },
     })
 
     if (routeRes.data && routeRes.data.length > 0) {
-      route.value = routeRes.data[0]
+      const routeData = routeRes.data[0]
+      try {
+        const statusesRes = await apiClient.get(`/dashboard/routes/${routeData.id}/statuses`)
+        routeData.statuses = statusesRes.data
+      } catch (err) {
+        console.error('Failed to fetch route statuses:', err)
+      }
+      route.value = routeData
+
+      if (routeData.driver_id) {
+        try {
+          const driversRes = await apiClient.get('/dashboard/drivers')
+          const driver = driversRes.data.find((d: User) => d.id === routeData.driver_id)
+          if (driver) {
+            assignedDriver.value = driver
+          }
+        } catch (err) {
+          console.error('Failed to fetch driver info:', err)
+        }
+      }
     }
   } catch (err: unknown) {
     console.error('Failed to fetch shipment details:', err)
@@ -55,46 +114,85 @@ onMounted(fetchData)
     <BaseButton @click="router.back()">Go Back</BaseButton>
   </div>
 
-  <div v-else class="p-8 font-roboto">
+  <div v-else class="p-4 md:p-8 font-roboto max-w-7xl mx-auto">
     <button
-      class="flex items-center gap-1 text-text-secondary text-xs mb-2 hover:text-text-primary transition-colors"
+      class="flex items-center gap-1 text-text-secondary text-[10px] md:text-xs mb-4 hover:text-text-primary transition-colors uppercase font-black tracking-widest"
       @click="router.back()"
     >
       <ArrowLeft class="w-3 h-3" /> BACK TO SHIPMENTS
     </button>
 
-    <h1 class="text-3xl font-bold text-text-primary mb-1">Tracking Number: {{ order.title }}</h1>
-    <span class="text-xs text-status-pending font-medium mb-6 block uppercase">
-      {{ order.status }}
-    </span>
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+      <div>
+        <h1 class="text-2xl md:text-[32px] font-bold text-text-primary leading-tight">
+          Tracking: {{ order.title }}
+        </h1>
+        <div class="flex items-center gap-2 mt-2">
+          <span
+            class="text-[10px] bg-brand-primary/10 text-brand-primary px-2 py-0.5 rounded font-black uppercase tracking-widest"
+          >
+            {{ order.status }}
+          </span>
+          <span class="text-[10px] text-text-placeholder font-medium uppercase tracking-tighter">
+            Created: {{ new Date(order.created_at).toLocaleDateString() }}
+          </span>
+        </div>
+      </div>
 
-    <div class="grid grid-cols-2 gap-4 mb-6">
-      <BaseButton variant="secondary"> <Edit class="w-4 h-4 mr-2" /> Edit </BaseButton>
-      <BaseButton variant="primary"> <Printer class="w-4 h-4 mr-2" /> Print Label </BaseButton>
+      <div class="flex flex-wrap items-center gap-3">
+        <BaseButton
+          v-if="order.status.toUpperCase() === 'PENDING'"
+          variant="secondary"
+          class="text-red-500 border-red-200 hover:bg-red-50 px-6 py-2 transition-colors text-xs font-bold"
+          @click="showCancelModal = true"
+          :disabled="isCancelling"
+        >
+          <Trash2 class="w-3.5 h-3.5 mr-2" />
+          {{ isCancelling ? 'Cancelling...' : 'Cancel Order' }}
+        </BaseButton>
+      </div>
     </div>
 
-    <div class="grid grid-cols-3 gap-6">
-      <div class="col-span-2 flex flex-col gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div class="lg:col-span-2 space-y-8">
         <ShipmentPackageDetails
           :order="order"
           :route="route"
           :assigned-driver="assignedDriver"
-          @driver-assigned="
-            (id: number | null) => {
-              if (route) route.driver_id = id
-            }
-          "
+          @refresh="fetchData"
         />
       </div>
-      <div>
-        <ShipmentStatusTimeline v-if="route" :route="route" />
+      <div class="space-y-8">
+        <ShipmentStatusTimeline v-if="route" :route="route" @refresh="fetchData" />
         <div
           v-else
-          class="bg-bg-canvas border border-border-default p-6 text-center text-text-placeholder text-sm"
+          class="bg-bg-canvas border border-border-default rounded-lg p-10 text-center text-text-placeholder text-sm flex flex-col items-center gap-3"
         >
-          No route information available yet.
+          <div class="w-12 h-12 rounded-full bg-bg-surface flex items-center justify-center">
+            <Navigation class="w-6 h-6 text-text-placeholder opacity-30" />
+          </div>
+          <p class="font-medium">No route information available yet.</p>
         </div>
       </div>
     </div>
+
+    <BaseModal
+      :show="showCancelModal"
+      title="Cancel Shipment"
+      message="Are you sure you want to cancel this shipment? This will stop the delivery process immediately."
+      confirm-text="Yes, Cancel Shipment"
+      variant="danger"
+      @confirm="handleCancel"
+      @cancel="showCancelModal = false"
+    />
+
+    <BaseModal
+      :show="showErrorModal"
+      title="Operation Failed"
+      :message="modalErrorMessage"
+      confirm-text="Close"
+      @confirm="showErrorModal = false"
+      @cancel="showErrorModal = false"
+    />
   </div>
 </template>

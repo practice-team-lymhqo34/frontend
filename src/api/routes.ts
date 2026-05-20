@@ -1,5 +1,5 @@
 import apiClient from './axios'
-import type { Route } from '@/types/route'
+import type { Route, RouteStatus } from '@/types/route'
 import type { User } from '@/types/user'
 
 export interface RouteStatusCreate {
@@ -16,6 +16,11 @@ export const routesApi = {
 
   async addRouteStatus(routeId: number, statusIn: RouteStatusCreate): Promise<unknown> {
     const response = await apiClient.post(`/dashboard/routes/${routeId}/statuses`, statusIn)
+    return response.data
+  },
+
+  async getRouteStatuses(routeId: number): Promise<RouteStatus[]> {
+    const response = await apiClient.get<RouteStatus[]>(`/dashboard/routes/${routeId}/statuses`)
     return response.data
   },
 

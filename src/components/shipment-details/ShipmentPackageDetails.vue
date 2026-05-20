@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import type { Order, Route, User } from '@/types'
 import ShipmentDriverSelect from '@/components/shipment-details/ShipmentDriverSelect.vue'
+import { MapPin, Weight } from 'lucide-vue-next'
 
 defineProps<{
   order: Order
   route?: Route | null
   assignedDriver: User | null
+}>()
+
+const emit = defineEmits<{
+  refresh: []
 }>()
 
 const formatDate = (date: string | null | undefined): string => {
@@ -25,20 +30,50 @@ const formatDate = (date: string | null | undefined): string => {
     <h2 class="text-xs font-bold tracking-wider text-text-secondary px-6 py-4">PACKAGE DETAILS</h2>
 
     <div class="divide-y divide-border-default">
-      <div class="grid grid-cols-2 items-center px-6 py-3">
-        <span class="text-text-secondary text-sm">Package</span>
+      <div class="grid grid-cols-2 items-start px-6 py-4">
+        <div class="flex items-center gap-2 text-text-secondary">
+          <Weight class="w-4 h-4" />
+          <span class="text-sm">Weight</span>
+        </div>
         <div>
-          <span class="text-text-primary text-sm">{{ order.weight }} kg</span>
-          <p v-if="order.description" class="text-text-secondary text-xs mt-0.5">
-            {{ order.description }}
+          <span class="text-text-primary text-sm font-bold">{{ order.weight }} kg</span>
+          <p v-if="order.description" class="text-text-secondary text-xs mt-1 italic">
+            "{{ order.description }}"
           </p>
         </div>
       </div>
 
-      <div class="grid grid-cols-2 items-center px-6 py-3">
+      <div class="grid grid-cols-2 items-start px-6 py-4">
+        <div class="flex items-center gap-2 text-text-secondary">
+          <MapPin class="w-4 h-4" />
+          <span class="text-sm">Route</span>
+        </div>
+        <div class="space-y-4">
+          <div>
+            <p class="text-[9px] font-black text-orange-400 uppercase tracking-tighter">
+              Pickup From
+            </p>
+            <p class="text-sm text-text-primary font-medium">{{ order.origin_address || '—' }}</p>
+          </div>
+          <div>
+            <p class="text-[9px] font-black text-green-500 uppercase tracking-tighter">
+              Deliver To
+            </p>
+            <p class="text-sm text-text-primary font-medium">
+              {{ order.destination_address || '—' }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 items-center px-6 py-4">
         <span class="text-text-secondary text-sm">Assigned Driver</span>
-        <ShipmentDriverSelect v-if="route" :route="route" :assigned-driver="assignedDriver" />
-        <span v-else class="text-text-placeholder text-sm">—</span>
+        <ShipmentDriverSelect
+          :route="route || null"
+          :order-id="order.id"
+          :assigned-driver="assignedDriver"
+          @refresh="emit('refresh')"
+        />
       </div>
 
       <div class="grid grid-cols-2 items-center px-6 py-3">

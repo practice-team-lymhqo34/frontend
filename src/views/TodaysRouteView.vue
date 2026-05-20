@@ -1,22 +1,82 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { routesApi } from '@/api/routes'
 import { useAuthStore } from '@/stores/auth'
 import type { Route } from '@/types/route'
-import { Truck, Clock, Camera, Loader2, Package, AlertCircle } from 'lucide-vue-next'
+import {
+  AlertCircle,
+  Camera,
+  CheckCircle2,
+  Clock,
+  Info,
+  Loader2,
+  Package,
+  Truck,
+  X,
+} from 'lucide-vue-next'
+import BaseModal from '@/components/ui/BaseModal.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
 
 const authStore = useAuthStore()
 const routes = ref<Route[]>([])
+const routeStatuses = ref<Record<number, string>>({})
 const isLoading = ref(true)
+const isUpdating = ref<Record<number, boolean>>({})
 const error = ref('')
 
+const toast = ref<{ show: boolean; message: string; type: 'success' | 'error' }>({
+  show: false,
+  message: '',
+  type: 'success',
+})
+
+const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+  toast.value = { show: true, message, type }
+  setTimeout(() => {
+    toast.value.show = false
+  }, 3000)
+}
+
+const isDetailsModalOpen = ref(false)
+const selectedRoute = ref<Route | null>(null)
+
+const openDetails = (route: Route) => {
+  selectedRoute.value = route
+  isDetailsModalOpen.value = true
+}
+
 const vehicle = authStore.user?.vehicle
+
+const currentStopId = computed(() => {
+  const activeRoute = routes.value.find(
+    (r) => (routeStatuses.value[r.id] || '').toLowerCase() !== 'delivered',
+  )
+  return activeRoute?.id
+})
 
 const fetchRoutes = async () => {
   isLoading.value = true
   error.value = ''
   try {
-    routes.value = await routesApi.getTodayRoutes()
+    const data = await routesApi.getTodayRoutes()
+    routes.value = data
+
+    await Promise.all(
+      data.map(async (route) => {
+        try {
+          const statuses = await routesApi.getRouteStatuses(route.id)
+          if (statuses.length > 0) {
+            const lastStatus = statuses[statuses.length - 1]
+            routeStatuses.value[route.id] = lastStatus?.status ?? ''
+          } else {
+            routeStatuses.value[route.id] = ''
+          }
+        } catch (err) {
+          console.error(`Failed to fetch status for route ${route.id}:`, err)
+          routeStatuses.value[route.id] = ''
+        }
+      }),
+    )
   } catch (err: unknown) {
     console.error('Failed to fetch routes:', err)
     error.value = 'Failed to load your routes for today.'
@@ -26,12 +86,49 @@ const fetchRoutes = async () => {
 }
 
 const updateStatus = async (routeId: number, status: string) => {
+  if (isUpdating.value[routeId]) return
+  isUpdating.value[routeId] = true
   try {
     await routesApi.addRouteStatus(routeId, { status })
-    await fetchRoutes()
+    routeStatuses.value[routeId] = status
+    routes.value = await routesApi.getTodayRoutes()
+    showToast(`Status updated to ${status.replace('_', ' ')}`)
   } catch (err: unknown) {
     console.error('Failed to update status:', err)
+    showToast('Failed to update status', 'error')
+  } finally {
+    isUpdating.value[routeId] = false
   }
+}
+
+const getStatusColor = (routeId: number, buttonStatus: string) => {
+  const current = (routeStatuses.value[routeId] || '').toLowerCase()
+  const target = buttonStatus.toLowerCase()
+  if (current === target) {
+    return target === 'delivered' ? 'bg-green-500 text-white' : 'bg-brand-primary text-white'
+  }
+  if (!isStatusDisabled(routeId, buttonStatus)) {
+    return 'bg-brand-primary/10 text-brand-primary border-brand-primary border'
+  }
+  return 'text-text-placeholder bg-bg-surface'
+}
+
+const isStatusDisabled = (routeId: number, targetStatus: string) => {
+  const current = routeStatuses.value[routeId]
+  if (isUpdating.value[routeId]) return true
+
+  const transitions: Record<string, string> = {
+    '': 'assigned',
+    assigned: 'loaded',
+    loaded: 'in_transit',
+    in_transit: 'delivered',
+    delivered: 'none',
+  }
+
+  const normalizedCurrent = current?.toLowerCase() || ''
+  const normalizedTarget = targetStatus.toLowerCase()
+
+  return transitions[normalizedCurrent] !== normalizedTarget
 }
 
 onMounted(fetchRoutes)
@@ -43,26 +140,52 @@ const formatDate = (date: string | null): string => {
     minute: '2-digit',
   })
 }
+
+const extractDetails = (description: string | null | undefined) => {
+  if (!description) {
+    return { qty: '—', vol: '—', desc: 'No instructions' }
+  }
+
+  const qtyMatch = description.match(/Quantity: ([^,.]+)/)
+  const volMatch = description.match(/Volume: ([^,.]+)/)
+
+  const cleanDesc = description
+    .replace(/Quantity: [^,.]+[,.]?\s*/i, '')
+    .replace(/Volume: [^,.]+[,.]?\s*/i, '')
+    .trim()
+
+  return {
+    qty: qtyMatch ? qtyMatch[1]?.trim() : '—',
+    vol: volMatch ? volMatch[1]?.trim() : '—',
+    desc: cleanDesc || 'No additional instructions',
+  }
+}
 </script>
 
 <template>
-  <div class="p-8 bg-bg-surface min-h-screen font-roboto text-text-primary">
-    <!-- Header -->
+  <div class="p-4 md:p-8 bg-bg-surface min-h-screen font-roboto text-text-primary">
     <div
-      class="mb-10 flex flex-col md:flex-row justify-between items-start md:items-end border-b border-border-default pb-6 gap-6"
+      class="mb-6 md:mb-10 flex flex-col md:flex-row justify-between items-start md:items-end border-b border-border-default pb-6 gap-6"
     >
       <div>
-        <h1 class="text-[32px] font-bold text-text-primary mb-1">Daily Route List</h1>
+        <div class="flex items-center gap-4 mb-1 flex-wrap">
+          <h1 class="text-2xl md:text-[32px] font-bold text-text-primary">Daily Route List</h1>
+          <span
+            v-if="routes.length > 0"
+            class="bg-brand-primary text-white text-[10px] md:text-xs font-black px-3 py-1 rounded-full uppercase tracking-widest"
+          >
+            {{ routes.length }} STOPS TODAY
+          </span>
+        </div>
         <p class="text-text-secondary font-medium">
           Driver Console • {{ new Date().toLocaleDateString('uk-UA') }}
         </p>
       </div>
 
-      <!-- Vehicle Status Info -->
-      <div class="flex gap-4">
+      <div class="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
         <div
           v-if="vehicle"
-          class="bg-white px-5 py-3 rounded-lg border border-border-default shadow-sm flex items-center gap-4"
+          class="bg-white px-5 py-3 rounded-lg border border-border-default shadow-sm flex items-center gap-4 flex-1 md:flex-initial"
         >
           <div class="w-10 h-10 bg-brand-primary/10 rounded-full flex items-center justify-center">
             <Truck class="w-5 h-5 text-brand-primary" />
@@ -83,7 +206,7 @@ const formatDate = (date: string | null): string => {
         </div>
         <div
           v-else
-          class="bg-orange-50 px-5 py-3 rounded-lg border border-orange-200 flex items-center gap-4"
+          class="bg-orange-50 px-5 py-3 rounded-lg border border-orange-200 flex items-center gap-4 flex-1 md:flex-initial"
         >
           <AlertCircle class="w-5 h-5 text-orange-500" />
           <div>
@@ -97,7 +220,7 @@ const formatDate = (date: string | null): string => {
         </div>
 
         <div
-          class="flex items-center gap-3 bg-white px-5 py-3 rounded-lg border border-border-default shadow-sm h-fit self-end"
+          class="flex items-center gap-3 bg-white px-5 py-3 rounded-lg border border-border-default shadow-sm h-fit self-end hidden sm:flex"
         >
           <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
           <span class="text-[10px] font-black uppercase tracking-wider text-text-secondary"
@@ -107,7 +230,24 @@ const formatDate = (date: string | null): string => {
       </div>
     </div>
 
-    <!-- Loading/Error States -->
+    <!-- Error Display -->
+    <div
+      v-if="error"
+      class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3 text-red-700"
+    >
+      <AlertCircle class="w-5 h-5 flex-shrink-0" />
+      <div class="flex-1">
+        <p class="font-bold">Error loading routes</p>
+        <p class="text-sm">{{ error }}</p>
+      </div>
+      <button
+        @click="fetchRoutes"
+        class="px-4 py-2 bg-white border border-red-200 rounded-md text-sm font-bold hover:bg-red-50 transition-colors"
+      >
+        Retry
+      </button>
+    </div>
+
     <div v-if="isLoading" class="flex flex-col items-center justify-center py-32">
       <Loader2 class="w-12 h-12 text-brand-primary animate-spin mb-4" />
       <p class="text-text-secondary font-bold tracking-widest">LOADING ROUTES...</p>
@@ -122,29 +262,48 @@ const formatDate = (date: string | null): string => {
       <p class="text-text-secondary mt-2">Check back later or contact your manager.</p>
     </div>
 
-    <!-- Full Width List Layout -->
-    <div v-else class="space-y-4">
+    <div v-else class="space-y-6">
       <div
         v-for="(route, index) in routes"
         :key="route.id"
-        class="bg-white border border-border-default rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col lg:flex-row items-stretch"
+        class="bg-white border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col lg:flex-row items-stretch relative"
+        :class="[
+          route.id === currentStopId
+            ? 'border-brand-primary border-2 shadow-lg z-10'
+            : 'border-border-default',
+          (routeStatuses[route.id] || '').toLowerCase() === 'delivered'
+            ? 'opacity-75 grayscale-[0.3] bg-bg-surface/10'
+            : '',
+        ]"
       >
-        <!-- Index & Time Section -->
         <div
-          class="lg:w-40 bg-bg-surface/50 border-r border-border-default p-6 flex lg:flex-col items-center justify-between lg:justify-center gap-2 text-center"
+          v-if="route.id === currentStopId"
+          class="absolute top-0 right-0 bg-brand-primary text-white text-[9px] font-black px-4 py-1.5 rounded-bl-lg z-20 uppercase tracking-widest shadow-sm"
+        >
+          Active Stop
+        </div>
+        <div
+          v-else-if="(routeStatuses[route.id] || '').toLowerCase() === 'delivered'"
+          class="absolute top-0 right-0 bg-green-500 text-white text-[9px] font-black px-4 py-1.5 rounded-bl-lg z-20 uppercase tracking-widest flex items-center gap-1 shadow-sm"
+        >
+          <CheckCircle2 class="w-3 h-3" /> Completed
+        </div>
+
+        <div
+          class="lg:w-40 bg-bg-surface/50 border-b lg:border-b-0 lg:border-r border-border-default p-4 lg:p-6 flex lg:flex-col items-center justify-between lg:justify-center gap-2 text-center"
         >
           <span class="text-[10px] font-black text-text-placeholder uppercase tracking-tighter"
             >STOP #{{ index + 1 }}</span
           >
-          <div class="flex flex-col items-center">
-            <Clock class="w-5 h-5 text-brand-primary mb-1" />
-            <span class="text-xl font-black text-text-primary">{{ formatDate(route.eta) }}</span>
+          <div class="flex flex-row lg:flex-col items-center gap-2">
+            <Clock class="w-4 h-4 lg:w-5 lg:h-5 text-brand-primary" />
+            <span class="text-lg lg:text-xl font-black text-text-primary">{{
+              formatDate(route.eta)
+            }}</span>
           </div>
         </div>
 
-        <!-- Details Section -->
         <div class="flex-1 p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-          <!-- Route Path & Info -->
           <div class="space-y-4">
             <div class="flex items-center gap-2 mb-3">
               <span
@@ -154,14 +313,10 @@ const formatDate = (date: string | null): string => {
               <h2 class="text-lg font-bold text-text-primary">Order #{{ route.order_id }}</h2>
             </div>
 
-            <!-- Route Path -->
             <div class="space-y-3 relative">
-              <!-- Vertical line connecting pins -->
               <div
                 class="absolute left-[7px] top-3 bottom-3 w-[2px] bg-border-default border-dashed border-l"
               ></div>
-
-              <!-- Origin -->
               <div class="flex items-start gap-3 relative z-10">
                 <div
                   class="w-4 h-4 rounded-full bg-orange-400 mt-1 flex-shrink-0 border-2 border-white"
@@ -171,12 +326,10 @@ const formatDate = (date: string | null): string => {
                     Pickup From
                   </p>
                   <p class="text-sm font-bold text-text-primary leading-tight">
-                    {{ route.order?.origin_address || 'Origin address not specified' }}
+                    {{ route.order?.origin_address || '—' }}
                   </p>
                 </div>
               </div>
-
-              <!-- Destination -->
               <div class="flex items-start gap-3 relative z-10">
                 <div
                   class="w-4 h-4 rounded-full bg-green-500 mt-1 flex-shrink-0 border-2 border-white"
@@ -186,79 +339,214 @@ const formatDate = (date: string | null): string => {
                     Deliver To
                   </p>
                   <p class="text-sm font-bold text-text-primary leading-tight">
-                    {{ route.order?.destination_address || 'Destination address not specified' }}
+                    {{ route.order?.destination_address || '—' }}
                   </p>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Shipment Details -->
           <div
             class="bg-bg-surface/30 rounded-lg p-4 border border-border-default flex items-center"
           >
-            <div class="grid grid-cols-2 w-full gap-4">
-              <div>
-                <p class="text-[10px] text-text-placeholder font-bold uppercase mb-1">Weight</p>
-                <div class="flex items-center gap-2 font-bold text-text-primary">
-                  <Package class="w-4 h-4 text-brand-primary" />
-                  <span>{{ route.order?.weight || '—' }} kg</span>
+            <div class="grid grid-cols-3 w-full gap-2">
+              <div class="border-r border-border-default pr-2">
+                <p class="text-[9px] text-text-placeholder font-bold uppercase mb-1">Weight</p>
+                <div class="flex items-center gap-1 font-bold text-text-primary text-xs">
+                  <Package class="w-3 h-3 text-brand-primary" />
+                  <span>{{ route.order?.weight || '—' }}kg</span>
                 </div>
               </div>
-              <div>
-                <p class="text-[10px] text-text-placeholder font-bold uppercase mb-1">
-                  Cargo Details
-                </p>
-                <p class="text-xs text-text-secondary italic line-clamp-2">
-                  {{ route.order?.description || 'No special instructions provided' }}
-                </p>
+              <div class="border-r border-border-default px-2">
+                <p class="text-[9px] text-text-placeholder font-bold uppercase mb-1">Qty</p>
+                <div class="font-bold text-text-primary text-xs">
+                  {{ extractDetails(route.order?.description).qty }}
+                </div>
+              </div>
+              <div class="pl-2">
+                <p class="text-[9px] text-text-placeholder font-bold uppercase mb-1">Vol</p>
+                <div class="font-bold text-text-primary text-xs">
+                  {{ extractDetails(route.order?.description).vol }}
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Actions Section -->
         <div
-          class="lg:w-80 p-6 bg-bg-surface/20 border-t lg:border-t-0 lg:border-l border-border-default flex flex-col justify-center gap-3"
+          class="lg:w-96 p-6 bg-bg-surface/20 border-t lg:border-t-0 lg:border-l border-border-default flex flex-col justify-center gap-4"
         >
-          <!-- Main Actions -->
           <div class="flex gap-2">
             <button
-              class="flex-1 py-2.5 bg-white border border-border-default rounded text-[11px] font-bold text-text-primary hover:bg-bg-surface transition-colors flex items-center justify-center gap-2"
+              class="flex-1 min-h-[48px] bg-white border border-border-default rounded-lg text-[11px] font-bold text-text-primary hover:bg-bg-surface transition-colors flex items-center justify-center gap-2"
             >
               <Camera class="w-4 h-4 text-brand-primary" /> ADD PHOTO
             </button>
             <button
-              class="px-4 py-2.5 bg-white border border-border-default rounded text-[11px] font-bold text-text-primary hover:bg-bg-surface"
+              @click="openDetails(route)"
+              class="px-6 min-h-[48px] bg-white border border-border-default rounded-lg text-[11px] font-bold text-text-primary hover:bg-bg-surface"
             >
               DETAILS
             </button>
           </div>
 
-          <!-- Status Bar -->
-          <div class="flex p-1 bg-white border border-border-default rounded">
-            <button
-              @click="updateStatus(route.id, 'LOADED')"
-              class="flex-1 py-2 text-[9px] font-black uppercase rounded transition-all hover:bg-brand-primary/10 text-brand-primary"
+          <div class="flex p-1.5 bg-white border border-border-default rounded-xl relative">
+            <div
+              v-if="isUpdating[route.id]"
+              class="absolute inset-0 bg-white/50 z-10 flex items-center justify-center rounded-xl"
             >
-              Loaded
-            </button>
+              <Loader2 class="w-5 h-5 text-brand-primary animate-spin" />
+            </div>
+
             <button
-              @click="updateStatus(route.id, 'IN_TRANSIT')"
-              class="flex-1 py-2 text-[9px] font-black uppercase rounded transition-all hover:bg-brand-primary/10 text-brand-primary border-x border-border-default"
+              v-if="!routeStatuses[route.id]"
+              @click="updateStatus(route.id, 'assigned')"
+              class="flex-1 min-h-[48px] text-[10px] font-black uppercase rounded-lg transition-all bg-brand-primary text-white hover:bg-brand-primary/90 shadow-sm"
             >
-              Transit
+              Accept Route
             </button>
-            <button
-              @click="updateStatus(route.id, 'DELIVERED')"
-              class="flex-1 py-2 text-[9px] font-black uppercase rounded transition-all hover:bg-green-500 text-green-600 font-bold"
-            >
-              Arrived
-            </button>
+
+            <template v-else>
+              <button
+                @click="updateStatus(route.id, 'loaded')"
+                :disabled="isStatusDisabled(route.id, 'loaded')"
+                :class="[
+                  'flex-1 min-h-[48px] text-[10px] font-black uppercase rounded-lg transition-all disabled:cursor-not-allowed',
+                  getStatusColor(route.id, 'loaded'),
+                ]"
+              >
+                Loaded
+              </button>
+              <button
+                @click="updateStatus(route.id, 'in_transit')"
+                :disabled="isStatusDisabled(route.id, 'in_transit')"
+                :class="[
+                  'flex-1 min-h-[48px] text-[10px] font-black uppercase rounded-lg transition-all mx-1.5 disabled:cursor-not-allowed',
+                  getStatusColor(route.id, 'in_transit'),
+                ]"
+              >
+                In Transit
+              </button>
+              <button
+                @click="updateStatus(route.id, 'delivered')"
+                :disabled="isStatusDisabled(route.id, 'delivered')"
+                :class="[
+                  'flex-1 min-h-[48px] text-[10px] font-black uppercase rounded-lg transition-all disabled:cursor-not-allowed',
+                  getStatusColor(route.id, 'delivered'),
+                ]"
+              >
+                Delivered
+              </button>
+            </template>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Details Modal -->
+    <BaseModal
+      :show="isDetailsModalOpen"
+      @cancel="isDetailsModalOpen = false"
+      title="Order Details"
+      message="msg"
+    >
+      <div v-if="selectedRoute" class="space-y-6 py-2">
+        <div class="flex items-center justify-between border-b pb-4">
+          <div>
+            <p class="text-[10px] font-black text-text-placeholder uppercase">Order ID</p>
+            <p class="text-lg font-bold">#{{ selectedRoute.order_id }}</p>
+          </div>
+          <div class="text-right">
+            <p class="text-[10px] font-black text-text-placeholder uppercase">Current Status</p>
+            <span
+              class="text-xs font-bold bg-brand-primary/10 text-brand-primary px-2 py-1 rounded uppercase"
+            >
+              {{ routeStatuses[selectedRoute.id] || 'Assigned' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="p-3 bg-bg-surface rounded-lg border border-border-default">
+            <p class="text-[9px] font-black text-text-placeholder uppercase mb-1">Pickup Address</p>
+            <p class="text-sm font-medium leading-tight">
+              {{ selectedRoute.order?.origin_address }}
+            </p>
+          </div>
+          <div class="p-3 bg-bg-surface rounded-lg border border-border-default">
+            <p class="text-[9px] font-black text-text-placeholder uppercase mb-1">
+              Delivery Address
+            </p>
+            <p class="text-sm font-medium leading-tight">
+              {{ selectedRoute.order?.destination_address }}
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <p class="text-[10px] font-black text-text-placeholder uppercase mb-2">
+            Order Information
+          </p>
+          <div class="bg-white border rounded-lg overflow-hidden">
+            <div class="p-4 border-b flex justify-between items-center">
+              <span class="text-sm font-bold text-text-primary">{{
+                selectedRoute.order?.title
+              }}</span>
+              <span class="text-xs font-bold text-brand-primary"
+                >{{ selectedRoute.order?.weight }} kg</span
+              >
+            </div>
+            <div class="p-4 bg-bg-surface/30">
+              <p class="text-xs text-text-secondary whitespace-pre-wrap leading-relaxed">
+                {{ extractDetails(selectedRoute.order?.description).desc }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="flex items-center gap-3 p-4 bg-brand-primary/5 rounded-lg border border-brand-primary/10"
+        >
+          <Info class="w-5 h-5 text-brand-primary flex-shrink-0" />
+          <p class="text-xs text-text-primary">
+            Please ensure you have all documents signed before marking as
+            <span class="font-bold">Delivered</span>.
+          </p>
+        </div>
+      </div>
+      <template #footer>
+        <BaseButton variant="primary" @click="isDetailsModalOpen = false" class="w-full">
+          Close
+        </BaseButton>
+      </template>
+    </BaseModal>
+
+    <!-- Simple Toast -->
+    <Transition
+      enter-active-class="transform transition ease-out duration-300"
+      enter-from-class="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
+      enter-to-class="translate-y-0 opacity-100 sm:translate-x-0"
+      leave-active-class="transition ease-in duration-100"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="toast.show"
+        class="fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-6 py-4 rounded-xl shadow-2xl border pointer-events-auto"
+        :class="
+          toast.type === 'success'
+            ? 'bg-green-600 border-green-500 text-white'
+            : 'bg-red-600 border-red-500 text-white'
+        "
+      >
+        <CheckCircle2 v-if="toast.type === 'success'" class="w-5 h-5" />
+        <AlertCircle v-else class="w-5 h-5" />
+        <p class="text-sm font-bold tracking-wide uppercase">{{ toast.message }}</p>
+        <button @click="toast.show = false" class="ml-2 hover:opacity-70">
+          <X class="w-4 h-4" />
+        </button>
+      </div>
+    </Transition>
   </div>
 </template>
 

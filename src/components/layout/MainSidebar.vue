@@ -54,7 +54,7 @@ const authStore = useAuthStore()
 
 const handleLogout = async () => {
   try {
-    await apiClient.post('/logout')
+    await apiClient.post('/auth/logout')
   } catch (error) {
     console.error('Помилка при виході:', error)
   } finally {
@@ -66,27 +66,31 @@ const handleLogout = async () => {
 
 <template>
   <aside
-    class="fixed lg:sticky top-0 z-30 h-screen flex-shrink-0 flex flex-col py-6 bg-bg-sidebar text-text-on-dark transition-all duration-300 overflow-hidden"
-    :class="isOpen ? 'w-[230px] px-5' : 'w-0 lg:w-16 px-0 lg:px-3'"
+    class="fixed lg:sticky top-0 h-screen flex-shrink-0 flex flex-col py-6 bg-bg-sidebar text-text-on-dark transition-all duration-300 overflow-hidden lg:shadow-none"
+    :class="[
+      isOpen
+        ? 'w-[230px] px-5 shadow-2xl opacity-100'
+        : 'w-0 lg:w-16 px-0 lg:px-3 opacity-0 lg:opacity-100 pointer-events-none lg:pointer-events-auto',
+    ]"
   >
-    <button
-      class="flex items-center justify-center w-8 h-8 rounded text-text-sidebar-muted hover:text-white hover:bg-[#083672] transition-colors"
-      :class="isOpen ? 'self-end' : 'self-center'"
-      @click="$emit('toggle')"
-    >
-      <PanelLeftClose v-if="isOpen" class="w-4 h-4" />
-      <PanelLeftOpen v-else class="w-4 h-4" />
-    </button>
-    <div class="mb-5 overflow-hidden" :class="isOpen ? 'opacity-100' : 'opacity-0 lg:opacity-100'">
+    <div class="flex items-center justify-between mb-8" :class="!isOpen && 'lg:flex-col lg:gap-4'">
       <IconLogo v-if="isOpen" class="w-28 h-auto" />
-      <div v-else class="w-8 h-8 mx-auto">
+      <div v-else class="w-8 h-8 mx-auto lg:block hidden">
         <IconLogo class="w-full h-full object-contain" />
       </div>
+
+      <button
+        class="flex items-center justify-center w-8 h-8 rounded text-text-sidebar-muted hover:text-white hover:bg-[#083672] transition-colors"
+        @click="$emit('toggle')"
+      >
+        <PanelLeftClose v-if="isOpen" class="w-4 h-4" />
+        <PanelLeftOpen v-else class="w-4 h-4 lg:block hidden" />
+      </button>
     </div>
 
     <div
       class="flex mb-5 overflow-hidden"
-      :class="isOpen ? 'items-center gap-7' : 'lg:justify-center'"
+      :class="isOpen ? 'items-center gap-7' : 'lg:justify-center lg:mb-8'"
     >
       <div
         class="w-8 h-8 rounded-full bg-brand-light flex items-center justify-center flex-shrink-0"
@@ -103,7 +107,6 @@ const handleLogout = async () => {
       </template>
     </div>
 
-    <!-- Search -->
     <div v-if="isOpen" class="flex items-center gap-2 bg-[#083672] rounded px-3 py-2 mb-5">
       <Search class="w-4 h-4 text-text-sidebar-muted flex-shrink-0" />
       <input

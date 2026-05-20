@@ -16,10 +16,10 @@ const props = defineProps<{
 }>()
 
 const allSteps: { label: string; statusKey: RouteStatusEnum }[] = [
-  { label: 'Assigned to Driver', statusKey: 'ASSIGNED' },
-  { label: 'Loaded', statusKey: 'LOADED' },
-  { label: 'In Transit', statusKey: 'IN_TRANSIT' },
-  { label: 'Delivered', statusKey: 'DELIVERED' },
+  { label: 'Assigned to Driver', statusKey: 'assigned' },
+  { label: 'Loaded', statusKey: 'loaded' },
+  { label: 'In Transit', statusKey: 'in_transit' },
+  { label: 'Delivered', statusKey: 'delivered' },
 ]
 
 const steps = computed<TimelineStep[]>(() => {

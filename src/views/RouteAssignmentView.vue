@@ -75,11 +75,16 @@ const handleAssign = async () => {
       assignmentSuccess.value = false
     }, 2000)
   } catch (error: unknown) {
-    console.error('Assignment failed', error)
-
     if (axios.isAxiosError(error) && error.response?.status === 409) {
       assignmentError.value = 'This order has already been assigned to another driver.'
+      // Оновлюємо список, щоб прибрати вже зайняте замовлення
+      try {
+        unassignedOrders.value = await ordersApi.getUnassignedOrders()
+      } catch (e) {
+        console.error('Failed to refresh orders:', e)
+      }
     } else {
+      console.error('Assignment failed', error)
       assignmentError.value = 'Failed to assign route. Please try again later.'
     }
   } finally {
@@ -142,12 +147,6 @@ const handleAssign = async () => {
                 <h3 class="font-bold text-lg">{{ order.title }}</h3>
                 <div class="flex flex-col items-end">
                   <span class="text-sm font-bold text-brand-primary">{{ order.weight }} kg</span>
-                  <span
-                    v-if="order.status !== 'PENDING'"
-                    class="text-[10px] bg-gray-200 text-gray-600 px-2 py-0.5 rounded mt-1 font-black uppercase"
-                  >
-                    Already Assigned
-                  </span>
                 </div>
               </div>
 
@@ -255,30 +254,50 @@ const handleAssign = async () => {
             v-if="selectedDriver"
             class="mt-8 p-6 bg-bg-canvas border border-border-default rounded-lg shadow-sm"
           >
-            <h3 class="font-bold mb-4 uppercase text-xs tracking-wider text-text-secondary">
+            <h3 class="font-bold mb-4 uppercase text-[10px] tracking-wider text-text-secondary">
               Assignment Summary
             </h3>
-            <div class="flex items-center gap-4 mb-6">
-              <div class="flex-1 p-3 bg-bg-surface rounded border border-border-default text-sm">
-                <div class="text-xs text-text-secondary mb-1">Order</div>
-                <div class="font-bold">{{ selectedOrder.title }}</div>
-                <div class="text-[10px] text-text-secondary mt-1 flex flex-col gap-0.5">
+            <div class="flex flex-col sm:flex-row items-center gap-4 mb-6">
+              <div
+                class="w-full sm:flex-1 p-3 bg-bg-surface rounded border border-border-default text-sm"
+              >
+                <div
+                  class="text-[10px] text-text-secondary mb-1 uppercase font-black tracking-tighter"
+                >
+                  Order
+                </div>
+                <div class="font-bold text-brand-primary">{{ selectedOrder.title }}</div>
+                <div class="text-[10px] text-text-secondary mt-2 flex flex-col gap-1">
                   <span class="truncate" title="Origin">🏠 {{ selectedOrder.origin_address }}</span>
                   <span class="truncate" title="Destination"
                     >📍 {{ selectedOrder.destination_address }}</span
                   >
                 </div>
               </div>
-              <ChevronRight class="w-4 h-4 text-text-placeholder" />
-              <div class="flex-1 p-3 bg-bg-surface rounded border border-border-default text-sm">
-                <div class="text-xs text-text-secondary mb-1">Driver</div>
-                <div class="font-bold">{{ selectedDriver.full_name }}</div>
-                <div class="text-[10px] text-text-secondary mt-1">
+              <ChevronRight class="w-4 h-4 text-text-placeholder rotate-90 sm:rotate-0" />
+              <div
+                class="w-full sm:flex-1 p-3 bg-bg-surface rounded border border-border-default text-sm"
+              >
+                <div
+                  class="text-[10px] text-text-secondary mb-1 uppercase font-black tracking-tighter"
+                >
+                  Driver
+                </div>
+                <div class="font-bold text-brand-primary">{{ selectedDriver.full_name }}</div>
+                <div class="text-[10px] text-text-secondary mt-2">
                   🚛 {{ selectedDriver.vehicle?.brand }} ({{
                     selectedDriver.vehicle?.license_plate
                   }})
                 </div>
               </div>
+            </div>
+
+            <div
+              v-if="assignmentError"
+              class="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-sm font-bold rounded flex items-center gap-2"
+            >
+              <AlertCircle class="w-4 h-4" />
+              {{ assignmentError }}
             </div>
 
             <button
@@ -293,13 +312,6 @@ const handleAssign = async () => {
                     : 'bg-border-default text-text-placeholder cursor-not-allowed',
               ]"
             >
-              <p
-                v-if="assignmentError"
-                class="mt-4 p-3 bg-red-50 border border-red-200 text-red-600 text-sm font-bold rounded flex items-center gap-2"
-              >
-                8 <AlertCircle class="w-4 h-4" /> 9 {{ assignmentError }} 10
-              </p>
-
               <template v-if="isSubmitting">
                 <div
                   class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
