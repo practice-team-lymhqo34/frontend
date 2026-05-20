@@ -16,6 +16,7 @@ import {
 } from 'lucide-vue-next'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseImageUpload from '@/components/ui/BaseImageUpload.vue'
 
 const authStore = useAuthStore()
 const routes = ref<Route[]>([])
@@ -23,6 +24,13 @@ const routeStatuses = ref<Record<number, string>>({})
 const isLoading = ref(true)
 const isUpdating = ref<Record<number, boolean>>({})
 const error = ref('')
+const isPhotoModalOpen = ref(false)
+const selectedRouteForPhoto = ref<number | null>(null)
+
+const openPhotoUpload = (routeId: number) => {
+  selectedRouteForPhoto.value = routeId
+  isPhotoModalOpen.value = true
+}
 
 const toast = ref<{ show: boolean; message: string; type: 'success' | 'error' }>({
   show: false,
@@ -230,7 +238,6 @@ const extractDetails = (description: string | null | undefined) => {
       </div>
     </div>
 
-    <!-- Error Display -->
     <div
       v-if="error"
       class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3 text-red-700"
@@ -378,6 +385,7 @@ const extractDetails = (description: string | null | undefined) => {
         >
           <div class="flex gap-2">
             <button
+              @click="openPhotoUpload(route.id)"
               class="flex-1 min-h-[48px] bg-white border border-border-default rounded-lg text-[11px] font-bold text-text-primary hover:bg-bg-surface transition-colors flex items-center justify-center gap-2"
             >
               <Camera class="w-4 h-4 text-brand-primary" /> ADD PHOTO
@@ -443,7 +451,6 @@ const extractDetails = (description: string | null | undefined) => {
       </div>
     </div>
 
-    <!-- Details Modal -->
     <BaseModal
       :show="isDetailsModalOpen"
       @cancel="isDetailsModalOpen = false"
@@ -521,7 +528,20 @@ const extractDetails = (description: string | null | undefined) => {
       </template>
     </BaseModal>
 
-    <!-- Simple Toast -->
+    <BaseModal
+      :show="isPhotoModalOpen"
+      @cancel="isPhotoModalOpen = false"
+      title="Upload Photo"
+      message=""
+    >
+      <BaseImageUpload
+        v-if="selectedRouteForPhoto"
+        :route-id="selectedRouteForPhoto"
+        @uploaded="showToast('Photo uploaded successfully')"
+        @close="isPhotoModalOpen = false"
+      />
+    </BaseModal>
+
     <Transition
       enter-active-class="transform transition ease-out duration-300"
       enter-from-class="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
