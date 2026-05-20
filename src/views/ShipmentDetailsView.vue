@@ -9,7 +9,7 @@ import BaseModal from '@/components/ui/BaseModal.vue'
 import apiClient from '@/api/axios'
 import { ordersApi } from '@/api/orders'
 import { useAuthStore } from '@/stores/auth'
-import { Trash2, ArrowLeft } from 'lucide-vue-next'
+import { Trash2, ArrowLeft, Navigation } from 'lucide-vue-next'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -169,7 +169,7 @@ onMounted(fetchData)
           class="bg-bg-canvas border border-border-default rounded-lg p-10 text-center text-text-placeholder text-sm flex flex-col items-center gap-3"
         >
           <div class="w-12 h-12 rounded-full bg-bg-surface flex items-center justify-center">
-            <Route class="w-6 h-6 text-text-placeholder opacity-30" />
+            <Navigation class="w-6 h-6 text-text-placeholder opacity-30" />
           </div>
           <p class="font-medium">No route information available yet.</p>
         </div>

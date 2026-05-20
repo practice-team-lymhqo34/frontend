@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { User, UserPlus, Search, X, Loader2 } from 'lucide-vue-next'
 import type { Route, User as UserType } from '@/types'
 import apiClient from '@/api/axios'
+import BaseButton from '@/components/ui/BaseButton.vue'
 
 const props = defineProps<{
   route: Route | null
@@ -83,13 +84,10 @@ onMounted(fetchDrivers)
       </div>
     </div>
 
-    <button
-      @click="showPicker = true"
-      class="flex items-center gap-2 px-4 py-2 bg-white border border-border-default rounded-lg hover:bg-bg-surface transition-all text-xs font-bold text-brand-primary shadow-sm"
-    >
-      <UserPlus class="w-4 h-4" />
+    <BaseButton @click="showPicker = true" variant="secondary" class="!h-10 !px-4 !w-auto text-xs">
+      <UserPlus class="w-4 h-4 mr-2" />
       {{ assignedDriver ? 'CHANGE DRIVER' : 'ASSIGN DRIVER' }}
-    </button>
+    </BaseButton>
 
     <Teleport to="body">
       <div
@@ -135,14 +133,14 @@ onMounted(fetchDrivers)
               No drivers found matching your search.
             </div>
             <div v-else class="space-y-1">
-              <button
+              <div
                 v-for="driver in filteredDrivers"
                 :key="driver.id"
                 @click="handleAssign(driver.id)"
-                class="w-full flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-brand-primary/5 transition-colors text-left group"
+                class="w-full flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-brand-primary/5 transition-colors text-left group cursor-pointer"
               >
                 <div
-                  class="w-10 h-10 rounded-full bg-bg-surface flex items-center justify-center font-bold text-brand-primary group-hover:bg-brand-primary group-hover:text-white transition-all"
+                  class="w-10 h-10 rounded-full bg-bg-surface flex items-center justify-center font-bold text-brand-primary group-hover:bg-brand-primary group-hover:text-white transition-all flex-shrink-0"
                 >
                   {{ driver.full_name?.charAt(0) }}
                 </div>
@@ -155,7 +153,7 @@ onMounted(fetchDrivers)
                 <div class="text-[10px] font-black text-text-placeholder uppercase">
                   ID: #{{ driver.id }}
                 </div>
-              </button>
+              </div>
             </div>
           </div>
         </div>
