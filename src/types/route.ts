@@ -11,7 +11,13 @@ export interface Route {
   statuses?: RouteStatus[]
   order?: Order
 }
-export type RouteStatusEnum = 'ASSIGNED' | 'LOADED' | 'IN_TRANSIT' | 'DELIVERED' | 'FAILED'
+export type RouteStatusEnum =
+  | 'assigned'
+  | 'loaded'
+  | 'in_transit'
+  | 'delivered'
+  | 'failed'
+  | 'cancelled'
 
 export interface RouteStatus {
   id: number
