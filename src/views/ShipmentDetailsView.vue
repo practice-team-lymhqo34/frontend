@@ -21,7 +21,9 @@ const route = ref<Route | null>(null)
 const assignedDriver = ref<User | null>(null)
 const isLoading = ref(true)
 const isCancelling = ref(false)
+const isConfirming = ref(false)
 const showCancelModal = ref(false)
+const showConfirmModal = ref(false)
 const showErrorModal = ref(false)
 const modalErrorMessage = ref('')
 const error = ref('')
@@ -39,6 +41,23 @@ const handleCancel = async () => {
     showErrorModal.value = true
   } finally {
     isCancelling.value = false
+  }
+}
+
+const handleConfirmReceipt = async () => {
+  if (!order.value) return
+  showConfirmModal.value = false
+  isConfirming.value = true
+  try {
+    await ordersApi.confirmReceipt(order.value.id)
+    await fetchData()
+  } catch (err) {
+    console.error('Failed to confirm receipt:', err)
+    modalErrorMessage.value =
+      'Failed to confirm receipt. The backend endpoint might not be ready yet.'
+    showErrorModal.value = true
+  } finally {
+    isConfirming.value = false
   }
 }
 
@@ -150,6 +169,16 @@ onMounted(fetchData)
           <Trash2 class="w-3.5 h-3.5 mr-2" />
           {{ isCancelling ? 'Cancelling...' : 'Cancel Order' }}
         </BaseButton>
+
+        <BaseButton
+          v-if="order.status.toUpperCase() === 'IN_PROGRESS'"
+          variant="primary"
+          class="bg-green-600 hover:bg-green-700 border-green-600 px-6 py-2 transition-colors text-xs font-bold"
+          @click="showConfirmModal = true"
+          :disabled="isConfirming"
+        >
+          {{ isConfirming ? 'Confirming...' : 'Confirm Receipt' }}
+        </BaseButton>
       </div>
     </div>
 
@@ -184,6 +213,15 @@ onMounted(fetchData)
       variant="danger"
       @confirm="handleCancel"
       @cancel="showCancelModal = false"
+    />
+
+    <BaseModal
+      :show="showConfirmModal"
+      title="Confirm Receipt"
+      message="Are you sure you have received this order? This will mark the order as completed."
+      confirm-text="Yes, I Received It"
+      @confirm="handleConfirmReceipt"
+      @cancel="showConfirmModal = false"
     />
 
     <BaseModal

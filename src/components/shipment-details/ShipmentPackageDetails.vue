@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import type { Order, Route, User } from '@/types'
 import ShipmentDriverSelect from '@/components/shipment-details/ShipmentDriverSelect.vue'
-import { MapPin, Weight } from 'lucide-vue-next'
+import { MapPin, Weight, User as UserIcon } from 'lucide-vue-next'
 
 defineProps<{
   order: Order
   route?: Route | null
   assignedDriver: User | null
+  readOnly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -68,7 +69,22 @@ const formatDate = (date: string | null | undefined): string => {
 
       <div class="grid grid-cols-2 items-center px-6 py-4">
         <span class="text-text-secondary text-sm">Assigned Driver</span>
+        <div v-if="readOnly" class="flex items-center gap-2">
+          <div
+            v-if="assignedDriver"
+            class="flex items-center gap-3 bg-bg-surface px-3 py-1.5 rounded-lg border border-border-default w-full"
+          >
+            <div
+              class="w-6 h-6 rounded-full bg-brand-primary/10 flex items-center justify-center flex-shrink-0"
+            >
+              <UserIcon class="w-3 h-3 text-brand-primary" />
+            </div>
+            <span class="text-sm font-bold text-text-primary">{{ assignedDriver.full_name }}</span>
+          </div>
+          <span v-else class="text-text-placeholder text-sm font-medium">Not Assigned</span>
+        </div>
         <ShipmentDriverSelect
+          v-else
           :route="route || null"
           :order-id="order.id"
           :assigned-driver="assignedDriver"

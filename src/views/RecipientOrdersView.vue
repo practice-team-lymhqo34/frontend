@@ -13,12 +13,20 @@ const isLoading = ref(true)
 const error = ref('')
 
 const showCancelModal = ref(false)
+const showConfirmModal = ref(false)
 const orderToCancel = ref<number | null>(null)
+const orderToConfirm = ref<number | null>(null)
 
 const confirmCancel = (e: Event, orderId: number) => {
   e.stopPropagation()
   orderToCancel.value = orderId
   showCancelModal.value = true
+}
+
+const openConfirmModal = (e: Event, orderId: number) => {
+  e.stopPropagation()
+  orderToConfirm.value = orderId
+  showConfirmModal.value = true
 }
 
 const handleCancel = async () => {
@@ -31,6 +39,23 @@ const handleCancel = async () => {
     await fetchOrders()
   } catch (err) {
     console.error('Failed to cancel order:', err)
+  }
+}
+
+const handleConfirmReceipt = async () => {
+  if (!orderToConfirm.value) return
+
+  try {
+    await ordersApi.confirmReceipt(orderToConfirm.value)
+    showConfirmModal.value = false
+    orderToConfirm.value = null
+    await fetchOrders()
+  } catch (err) {
+    console.error('Failed to confirm receipt:', err)
+    // For now, we just close the modal since backend might not be ready
+    showConfirmModal.value = false
+    orderToConfirm.value = null
+    alert('Failed to confirm receipt. The backend endpoint might not be ready yet.')
   }
 }
 
@@ -156,7 +181,7 @@ onMounted(fetchOrders)
               v-for="order in orders"
               :key="order.id"
               class="hover:bg-bg-surface transition-colors cursor-pointer group"
-              @click="router.push(`/shipments/${order.id}`)"
+              @click="router.push(`/recipient/orders/${order.id}`)"
             >
               <td class="py-4 px-6">
                 <div
@@ -196,6 +221,13 @@ onMounted(fetchOrders)
                 >
                   Cancel
                 </button>
+                <button
+                  v-if="order.status.toUpperCase() === 'IN_PROGRESS'"
+                  @click="openConfirmModal($event, order.id)"
+                  class="text-green-500 font-bold text-xs hover:underline mr-4"
+                >
+                  Confirm Receipt
+                </button>
                 <button class="text-brand-primary font-bold text-xs hover:underline">
                   View Details
                 </button>
@@ -213,6 +245,15 @@ onMounted(fetchOrders)
         variant="danger"
         @confirm="handleCancel"
         @cancel="showCancelModal = false"
+      />
+
+      <BaseModal
+        :show="showConfirmModal"
+        title="Confirm Receipt"
+        message="Are you sure you have received this order? This will mark the order as completed."
+        confirm-text="Yes, I Received It"
+        @confirm="handleConfirmReceipt"
+        @cancel="showConfirmModal = false"
       />
     </div>
   </div>
