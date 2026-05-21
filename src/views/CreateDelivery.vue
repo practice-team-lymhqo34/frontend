@@ -200,18 +200,18 @@ const submitOrder = async () => {
 </script>
 
 <template>
-  <div class="p-8 max-w-3xl text-primary font-roboto">
-    <div class="mb-8 flex justify-between items-start">
+  <div class="p-4 md:p-8 max-w-7xl mx-auto text-primary font-roboto">
+    <div class="mb-8 flex flex-col md:flex-row justify-between items-start gap-4">
       <div>
-        <h1 class="text-[32px] font-bold mb-1">Create New Delivery</h1>
-        <p class="text-gray-500">Specify details for your shipment</p>
+        <h1 class="text-2xl md:text-[32px] font-bold mb-1">Create New Delivery</h1>
+        <p class="text-gray-500 text-sm md:text-base">Specify details for your shipment</p>
       </div>
 
-      <div class="relative" v-if="templates.length > 0">
+      <div class="relative w-full md:w-auto" v-if="templates.length > 0">
         <button
           @click="showTemplates = !showTemplates"
           type="button"
-          class="flex items-center gap-2 px-4 py-2 bg-bg-surface border border-border-default rounded hover:bg-gray-50 transition-colors text-sm font-bold"
+          class="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-bg-surface border border-border-default rounded hover:bg-gray-50 transition-colors text-sm font-bold"
         >
           <Copy class="w-4 h-4 text-brand-primary" />
           Use Template
@@ -223,7 +223,7 @@ const submitOrder = async () => {
 
         <div
           v-if="showTemplates"
-          class="absolute right-0 mt-2 w-64 bg-white border border-border-default rounded-lg shadow-xl z-50 py-2"
+          class="absolute right-0 mt-2 w-full md:w-64 bg-white border border-border-default rounded-lg shadow-xl z-50 py-2"
         >
           <div
             v-for="template in templates"
@@ -246,82 +246,107 @@ const submitOrder = async () => {
         {{ errorMessage }}
       </div>
 
-      <div class="bg-bg-canvas p-6 border border-gray-200 mb-8">
-        <div class="flex justify-between items-center mb-5">
-          <h2 class="text-sm font-bold tracking-wider text-text-secondary uppercase">
-            DELIVERY DETAILS
-          </h2>
-          <span class="text-[10px] text-text-placeholder font-bold">* REQUIRED FIELDS</span>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        <!-- Left Column: Primary Details -->
+        <div class="lg:col-span-2 space-y-6">
+          <div class="bg-bg-canvas p-6 border border-gray-200 rounded-lg shadow-sm h-full">
+            <div class="flex justify-between items-center mb-6">
+              <h2 class="text-sm font-bold tracking-wider text-text-secondary uppercase">
+                Shipment Information
+              </h2>
+              <span class="text-[10px] text-text-placeholder font-bold">* REQUIRED</span>
+            </div>
+
+            <div class="space-y-6">
+              <BaseInput
+                v-model="form.title"
+                label="Delivery Title *"
+                placeholder="e.g. Weekly Electronics Supply"
+                :error="errors.title"
+              />
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <BaseInput
+                  v-model="form.origin_address"
+                  label="Origin Address *"
+                  placeholder="e.g. 123 Main St, City, Country"
+                  :error="errors.origin_address"
+                />
+                <BaseInput
+                  v-model="form.destination_address"
+                  label="Destination Address *"
+                  placeholder="e.g. 456 Delivery Ave, City, Country"
+                  :error="errors.destination_address"
+                />
+              </div>
+
+              <div class="flex flex-col gap-1 w-full">
+                <label class="text-text-primary text-sm font-normal leading-[140%]">
+                  Description (Optional)
+                </label>
+                <textarea
+                  v-model="form.description"
+                  rows="6"
+                  placeholder="Any additional notes for the logistics company..."
+                  class="px-4 py-3 bg-bg-surface border-b border-border-default focus:border-border-focus text-base text-text-primary placeholder-text-placeholder outline-none resize-none transition-colors rounded-t"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
+        <!-- Right Column: Specs and Options -->
         <div class="space-y-6">
-          <BaseInput
-            v-model="form.title"
-            label="Delivery Title *"
-            placeholder="e.g. Weekly Electronics Supply"
-            :error="errors.title"
-          />
+          <div class="bg-bg-canvas p-6 border border-gray-200 rounded-lg shadow-sm">
+            <h2 class="text-sm font-bold tracking-wider text-text-secondary uppercase mb-6">
+              Package Specifications
+            </h2>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <BaseInput
-              v-model="form.origin_address"
-              label="Origin Address *"
-              placeholder="e.g. 123 Main St, City, Country"
-              :error="errors.origin_address"
-            />
-            <BaseInput
-              v-model="form.destination_address"
-              label="Destination Address *"
-              placeholder="e.g. 456 Delivery Ave, City, Country"
-              :error="errors.destination_address"
-            />
+            <div class="space-y-6">
+              <BaseInput
+                v-model="form.weight"
+                label="Weight (kg) *"
+                type="number"
+                placeholder="0.0"
+                :error="errors.weight"
+              />
+              <BaseInput
+                v-model="form.volume"
+                label="Volume (m³)"
+                type="number"
+                placeholder="0.0"
+                :error="errors.volume"
+              />
+              <BaseInput
+                v-model="form.quantity"
+                label="Quantity"
+                type="number"
+                placeholder="1"
+                :error="errors.quantity"
+              />
+            </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <BaseInput
-              v-model="form.weight"
-              label="Weight (kg) *"
-              type="number"
-              placeholder="0.0"
-              :error="errors.weight"
-            />
-            <BaseInput
-              v-model="form.volume"
-              label="Volume (m³)"
-              type="number"
-              placeholder="0.0"
-              :error="errors.volume"
-            />
-            <BaseInput
-              v-model="form.quantity"
-              label="Quantity"
-              type="number"
-              placeholder="1"
-              :error="errors.quantity"
-            />
+          <div class="bg-bg-canvas p-6 border border-gray-200 rounded-lg shadow-sm">
+            <h2 class="text-sm font-bold tracking-wider text-text-secondary uppercase mb-4">
+              Options
+            </h2>
+            <BaseCheckbox v-model="form.isTemplate" label="Save this as a template" />
           </div>
-
-          <div class="flex flex-col gap-1 w-full">
-            <label class="text-text-primary text-sm font-normal leading-[140%]">
-              Description (Optional)
-            </label>
-            <textarea
-              v-model="form.description"
-              rows="4"
-              placeholder="Any additional notes for the logistics company..."
-              class="px-4 py-3 bg-bg-surface border-b border-border-default focus:border-border-focus text-base text-text-primary placeholder-text-placeholder outline-none resize-none transition-colors"
-            />
-          </div>
-          <BaseCheckbox v-model="form.isTemplate" label="Save this as a template for future use" />
         </div>
       </div>
 
-      <div class="flex gap-4">
-        <BaseButton variant="secondary" type="button" @click="$router.back()">
+      <div class="flex flex-col-reverse md:flex-row gap-4 md:justify-end">
+        <BaseButton
+          variant="secondary"
+          type="button"
+          class="w-full md:w-auto px-8"
+          @click="$router.back()"
+        >
           <X class="w-4 h-4 mr-2" /> Cancel
         </BaseButton>
 
-        <BaseButton type="submit" :disabled="isSubmitting">
+        <BaseButton type="submit" :disabled="isSubmitting" class="w-full md:w-auto px-10">
           <Package class="w-4 h-4 mr-2" />
           {{ isSubmitting ? 'Processing...' : 'Create Shipment' }}
         </BaseButton>
