@@ -17,6 +17,7 @@ import {
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseImageUpload from '@/components/ui/BaseImageUpload.vue'
+import { getErrorMessage } from '@/utils/errorHandler'
 
 const authStore = useAuthStore()
 const routes = ref<Route[]>([])
@@ -87,7 +88,7 @@ const fetchRoutes = async () => {
     )
   } catch (err: unknown) {
     console.error('Failed to fetch routes:', err)
-    error.value = 'Failed to load your routes for today.'
+    error.value = getErrorMessage(err)
   } finally {
     isLoading.value = false
   }
@@ -103,7 +104,7 @@ const updateStatus = async (routeId: number, status: string) => {
     showToast(`Status updated to ${status.replace('_', ' ')}`)
   } catch (err: unknown) {
     console.error('Failed to update status:', err)
-    showToast('Failed to update status', 'error')
+    showToast(getErrorMessage(err), 'error')
   } finally {
     isUpdating.value[routeId] = false
   }

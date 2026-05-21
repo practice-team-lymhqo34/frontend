@@ -10,6 +10,7 @@ import apiClient from '@/api/axios'
 import { ordersApi } from '@/api/orders'
 import { useAuthStore } from '@/stores/auth'
 import { Trash2, ArrowLeft, Navigation } from 'lucide-vue-next'
+import { getErrorMessage } from '@/utils/errorHandler'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -37,7 +38,7 @@ const handleCancel = async () => {
     await fetchData()
   } catch (err) {
     console.error('Failed to cancel order:', err)
-    modalErrorMessage.value = 'Failed to cancel order. It might already be in progress.'
+    modalErrorMessage.value = getErrorMessage(err)
     showErrorModal.value = true
   } finally {
     isCancelling.value = false
@@ -53,8 +54,7 @@ const handleConfirmReceipt = async () => {
     await fetchData()
   } catch (err) {
     console.error('Failed to confirm receipt:', err)
-    modalErrorMessage.value =
-      'Failed to confirm receipt. The backend endpoint might not be ready yet.'
+    modalErrorMessage.value = getErrorMessage(err)
     showErrorModal.value = true
   } finally {
     isConfirming.value = false
@@ -74,8 +74,8 @@ const fetchData = async () => {
       try {
         const orderRes = await apiClient.get(`/dashboard/orders/${orderId}`)
         orderData = orderRes.data
-      } catch {
-        console.warn('Could not fetch order directly, likely access denied.')
+      } catch (err) {
+        console.warn('Could not fetch order directly, likely access denied.', err)
       }
     }
 
@@ -112,7 +112,7 @@ const fetchData = async () => {
     }
   } catch (err: unknown) {
     console.error('Failed to fetch shipment details:', err)
-    error.value = 'Failed to load shipment details.'
+    error.value = getErrorMessage(err)
   } finally {
     isLoading.value = false
   }

@@ -14,7 +14,7 @@ import { ordersApi } from '@/api/orders'
 import type { Order } from '@/types/order'
 import type { User as UserType } from '@/types/user'
 import type { Vehicle } from '@/types/vehicle'
-import axios from 'axios'
+import { getErrorMessage } from '@/utils/errorHandler'
 
 const unassignedOrders = ref<Order[]>([])
 const drivers = ref<(UserType & { vehicle?: Vehicle })[]>([])
@@ -75,17 +75,14 @@ const handleAssign = async () => {
       assignmentSuccess.value = false
     }, 2000)
   } catch (error: unknown) {
-    if (axios.isAxiosError(error) && error.response?.status === 409) {
-      assignmentError.value = 'This order has already been assigned to another driver.'
-      // Оновлюємо список, щоб прибрати вже зайняте замовлення
-      try {
-        unassignedOrders.value = await ordersApi.getUnassignedOrders()
-      } catch (e) {
-        console.error('Failed to refresh orders:', e)
-      }
-    } else {
-      console.error('Assignment failed', error)
-      assignmentError.value = 'Failed to assign route. Please try again later.'
+    console.error('Assignment failed', error)
+    assignmentError.value = getErrorMessage(error)
+
+    // Refresh orders list to remove potentially already assigned ones
+    try {
+      unassignedOrders.value = await ordersApi.getUnassignedOrders()
+    } catch (e) {
+      console.error('Failed to refresh orders:', e)
     }
   } finally {
     isSubmitting.value = false

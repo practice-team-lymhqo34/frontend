@@ -4,11 +4,11 @@ import { useRouter } from 'vue-router'
 import apiClient from '@/api/axios'
 import { ordersApi } from '@/api/orders'
 import type { Order } from '@/types/order'
-import axios from 'axios'
 import { Package, X, Copy, ChevronDown } from 'lucide-vue-next'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseCheckbox from '@/components/ui/BaseCheckbox.vue'
+import { getErrorMessage } from '@/utils/errorHandler'
 
 interface OrderForm {
   title: string
@@ -186,13 +186,8 @@ const submitOrder = async () => {
     localStorage.removeItem(STORAGE_KEY)
     router.push('/recipient/orders')
   } catch (err: unknown) {
-    console.error('Помилка при створенні замовлення:', err)
-    if (axios.isAxiosError(err)) {
-      errorMessage.value =
-        err.response?.data?.detail || 'An error occurred while creating the shipment.'
-    } else {
-      errorMessage.value = 'An unexpected error occurred.'
-    }
+    console.error('Error creating order:', err)
+    errorMessage.value = getErrorMessage(err)
   } finally {
     isSubmitting.value = false
   }

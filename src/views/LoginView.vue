@@ -8,7 +8,7 @@ import AuthSidebar from '@/components/auth/AuthSidebar.vue'
 import apiClient from '@/api/axios'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import axios from 'axios'
+import { getErrorMessage } from '@/utils/errorHandler'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -78,21 +78,8 @@ const handleLogin = async () => {
     await redirectUser()
   } catch (error: unknown) {
     isLoading.value = false
+    errorMessage.value = getErrorMessage(error)
     console.error('Login error:', error)
-    if (axios.isAxiosError(error)) {
-      const detail = error.response?.data?.detail
-      if (Array.isArray(detail)) {
-        errorMessage.value = 'Please fill all fields correctly.'
-      } else if (typeof detail === 'string') {
-        errorMessage.value = detail
-      } else if (error.code === 'ECONNABORTED') {
-        errorMessage.value = 'Request timed out. Please try again.'
-      } else {
-        errorMessage.value = 'Server connection error'
-      }
-    } else {
-      errorMessage.value = 'An unexpected error occurred'
-    }
   }
 }
 </script>

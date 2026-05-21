@@ -6,6 +6,7 @@ import type { Order } from '@/types'
 import { Package, Search, Filter, Plus, ChevronRight } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import { getErrorMessage } from '@/utils/errorHandler'
 
 const router = useRouter()
 const orders = ref<Order[]>([])
@@ -39,6 +40,7 @@ const handleCancel = async () => {
     await fetchOrders()
   } catch (err) {
     console.error('Failed to cancel order:', err)
+    alert(getErrorMessage(err))
   }
 }
 
@@ -52,10 +54,9 @@ const handleConfirmReceipt = async () => {
     await fetchOrders()
   } catch (err) {
     console.error('Failed to confirm receipt:', err)
-    // For now, we just close the modal since backend might not be ready
     showConfirmModal.value = false
     orderToConfirm.value = null
-    alert('Failed to confirm receipt. The backend endpoint might not be ready yet.')
+    alert(getErrorMessage(err))
   }
 }
 
@@ -67,7 +68,7 @@ const fetchOrders = async () => {
     orders.value = response.data
   } catch (err: unknown) {
     console.error('Failed to fetch orders:', err)
-    error.value = 'Failed to load orders. Please try again.'
+    error.value = getErrorMessage(err)
   } finally {
     isLoading.value = false
   }

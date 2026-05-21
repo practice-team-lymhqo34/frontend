@@ -7,7 +7,7 @@ import IconEye from '@/components/icons/IconEye.vue'
 import AuthSidebar from '@/components/auth/AuthSidebar.vue'
 import apiClient from '@/api/axios.ts'
 import router from '@/router'
-import axios from 'axios'
+import { getErrorMessage } from '@/utils/errorHandler'
 
 const fullName = ref('')
 const email = ref('')
@@ -106,20 +106,7 @@ const handleRegister = async () => {
 
     router.push('/login')
   } catch (error: unknown) {
-    if (axios.isAxiosError(error)) {
-      const detail = error.response?.data?.detail
-
-      if (Array.isArray(detail)) {
-        console.error('Validation errors from backend:', detail)
-        errorMessage.value = 'Please, fill all the necessary fields correctly.'
-      } else if (typeof detail === 'string') {
-        errorMessage.value = detail
-      } else {
-        errorMessage.value = 'Server connection failed'
-      }
-    } else {
-      errorMessage.value = 'Unknown error'
-    }
+    errorMessage.value = getErrorMessage(error)
   } finally {
     isLoading.value = false
   }

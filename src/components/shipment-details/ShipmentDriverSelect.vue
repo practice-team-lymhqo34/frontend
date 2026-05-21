@@ -4,6 +4,7 @@ import { User, UserPlus, Search, X, Loader2 } from 'lucide-vue-next'
 import type { Route, User as UserType } from '@/types'
 import apiClient from '@/api/axios'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import { getErrorMessage } from '@/utils/errorHandler'
 
 const props = defineProps<{
   route: Route | null
@@ -19,13 +20,16 @@ const showPicker = ref(false)
 const searchQuery = ref('')
 const drivers = ref<UserType[]>([])
 const isLoading = ref(false)
+const errorMessage = ref('')
 
 const fetchDrivers = async () => {
   isLoading.value = true
+  errorMessage.value = ''
   try {
     const response = await apiClient.get<UserType[]>('/dashboard/drivers')
     drivers.value = response.data
   } catch (err) {
+    errorMessage.value = getErrorMessage(err)
     console.error('Failed to fetch drivers:', err)
   } finally {
     isLoading.value = false
@@ -41,6 +45,7 @@ const filteredDrivers = computed(() => {
 })
 
 const handleAssign = async (driverId: number) => {
+  errorMessage.value = ''
   try {
     if (props.route) {
       await apiClient.patch(`/dashboard/routes/${props.route.id}`, {
@@ -56,6 +61,7 @@ const handleAssign = async (driverId: number) => {
     showPicker.value = false
     emit('refresh')
   } catch (error) {
+    errorMessage.value = getErrorMessage(error)
     console.error('Error assigning driver:', error)
   }
 }
@@ -109,6 +115,12 @@ onMounted(fetchDrivers)
           </div>
 
           <div class="p-4 bg-bg-surface border-b border-border-default">
+            <div
+              v-if="errorMessage"
+              class="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs font-bold rounded flex items-center gap-2"
+            >
+              {{ errorMessage }}
+            </div>
             <div class="relative">
               <Search
                 class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-placeholder"

@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { invoicesApi } from '@/api/invoices'
 import type { Invoice } from '@/types/invoice'
 import { Loader2, AlertCircle } from 'lucide-vue-next'
+import { getErrorMessage } from '@/utils/errorHandler'
 
 const invoices = ref<Invoice[]>([])
 const isLoading = ref(true)
@@ -15,7 +16,7 @@ const fetchInvoices = async () => {
     invoices.value = await invoicesApi.getInvoices()
   } catch (err) {
     console.error('Failed to fetch invoices:', err)
-    error.value = 'Failed to load billing data. Please try again later.'
+    error.value = getErrorMessage(err)
   } finally {
     isLoading.value = false
   }

@@ -4,6 +4,7 @@ import apiClient from '@/api/axios'
 import type { Order } from '@/types'
 import { Package, Search, Filter, Loader2 } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
+import { getErrorMessage } from '@/utils/errorHandler'
 
 const router = useRouter()
 const orders = ref<Order[]>([])
@@ -18,7 +19,7 @@ const fetchOrders = async () => {
     orders.value = response.data
   } catch (err: unknown) {
     console.error('Failed to fetch shipments:', err)
-    error.value = 'Failed to load shipments list.'
+    error.value = getErrorMessage(err)
   } finally {
     isLoading.value = false
   }
