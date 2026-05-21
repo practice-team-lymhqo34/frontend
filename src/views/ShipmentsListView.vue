@@ -83,7 +83,6 @@ onMounted(fetchOrders)
     </div>
 
     <div v-else class="bg-white border border-border-default rounded-xl overflow-hidden shadow-sm">
-      <!-- Filters Bar -->
       <div class="p-4 border-b border-border-default flex gap-4 bg-bg-surface/50">
         <div class="relative flex-1">
           <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-placeholder" />
@@ -100,7 +99,6 @@ onMounted(fetchOrders)
         </button>
       </div>
 
-      <!-- Shipments Table -->
       <table class="w-full text-left border-collapse">
         <thead>
           <tr class="bg-bg-surface border-b border-border-default">

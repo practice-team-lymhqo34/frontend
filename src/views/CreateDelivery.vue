@@ -242,7 +242,6 @@ const submitOrder = async () => {
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        <!-- Left Column: Primary Details -->
         <div class="lg:col-span-2 space-y-6">
           <div class="bg-bg-canvas p-6 border border-gray-200 rounded-lg shadow-sm h-full">
             <div class="flex justify-between items-center mb-6">
@@ -290,7 +289,6 @@ const submitOrder = async () => {
           </div>
         </div>
 
-        <!-- Right Column: Specs and Options -->
         <div class="space-y-6">
           <div class="bg-bg-canvas p-6 border border-gray-200 rounded-lg shadow-sm">
             <h2 class="text-sm font-bold tracking-wider text-text-secondary uppercase mb-6">
