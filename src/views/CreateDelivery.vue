@@ -73,7 +73,6 @@ const applyTemplate = (template: Order) => {
   form.quantity = ''
   form.isTemplate = true
   showTemplates.value = false
-  // Clear all errors
   Object.keys(errors).forEach((key) => (errors[key as keyof typeof errors] = ''))
 }
 
@@ -128,7 +127,6 @@ watch(
 )
 
 const submitOrder = async () => {
-  // Clear previous errors
   Object.keys(errors).forEach((key) => (errors[key as keyof typeof errors] = ''))
 
   let hasError = false
@@ -165,7 +163,7 @@ const submitOrder = async () => {
   }
 
   if (hasError) {
-    errorMessage.value = 'Please correct the highlighted errors.'
+    errorMessage.value = 'Please fill all the required fields.'
     return
   }
 
