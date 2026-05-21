@@ -7,6 +7,11 @@ export const ordersApi = {
     return response.data
   },
 
+  async getOrder(orderId: number): Promise<Order> {
+    const response = await apiClient.get<Order>(`/dashboard/orders/${orderId}`)
+    return response.data
+  },
+
   async getUnassignedOrders(): Promise<Order[]> {
     const orders = await this.getOrders()
     return orders.filter(
@@ -27,5 +32,9 @@ export const ordersApi = {
 
   async deleteOrder(orderId: number): Promise<void> {
     await apiClient.delete(`/dashboard/orders/${orderId}`)
+  },
+
+  async confirmReceipt(orderId: number): Promise<void> {
+    await apiClient.post(`/dashboard/orders/${orderId}/confirm-receipt`)
   },
 }

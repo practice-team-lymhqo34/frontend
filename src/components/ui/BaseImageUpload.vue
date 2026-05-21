@@ -87,7 +87,6 @@ const handleUpload = async () => {
       <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onFileInput" />
     </div>
 
-    <!-- Preview -->
     <div v-else class="relative rounded-xl overflow-hidden border border-border-default">
       <img :src="preview" class="w-full max-h-64 object-cover" />
       <button

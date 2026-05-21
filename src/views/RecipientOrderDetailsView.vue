@@ -1,33 +1,79 @@
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ArrowLeft, Navigation, Trash2 } from 'lucide-vue-next'
 import type { Order, Route, User } from '@/types'
+import { ordersApi } from '@/api/orders'
+import apiClient from '@/api/axios'
 import ShipmentPackageDetails from '@/components/shipment-details/ShipmentPackageDetails.vue'
 import ShipmentStatusTimeline from '@/components/shipment-details/ShipmentStatusTimeline.vue'
-import { useRouter, useRoute } from 'vue-router'
-import { ref, onMounted } from 'vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
-import apiClient from '@/api/axios'
-import { ordersApi } from '@/api/orders'
-import { useAuthStore } from '@/stores/auth'
-import { Trash2, ArrowLeft, Navigation } from 'lucide-vue-next'
-import { getErrorMessage } from '@/utils/errorHandler'
 
-const authStore = useAuthStore()
-const router = useRouter()
 const routePath = useRoute()
-const orderId = routePath.params.id
+const router = useRouter()
+const orderId = Number(routePath.params.id)
 
 const order = ref<Order | null>(null)
 const route = ref<Route | null>(null)
 const assignedDriver = ref<User | null>(null)
 const isLoading = ref(true)
+const error = ref('')
+
 const isCancelling = ref(false)
 const isConfirming = ref(false)
 const showCancelModal = ref(false)
 const showConfirmModal = ref(false)
 const showErrorModal = ref(false)
 const modalErrorMessage = ref('')
-const error = ref('')
+
+const fetchData = async () => {
+  isLoading.value = true
+  error.value = ''
+  try {
+    // Fetch order
+    const orderData = await ordersApi.getOrder(orderId)
+    order.value = orderData
+
+    // Fetch route info (if exists)
+    try {
+      const routeRes = await apiClient.get('/dashboard/routes', {
+        params: { order_id: orderId },
+      })
+      if (routeRes.data && routeRes.data.length > 0) {
+        const routeData = routeRes.data[0]
+        // Fetch statuses for the route
+        try {
+          const statusesRes = await apiClient.get(`/dashboard/routes/${routeData.id}/statuses`)
+          routeData.statuses = statusesRes.data
+        } catch (err) {
+          console.warn('Could not fetch route statuses', err)
+        }
+        route.value = routeData
+
+        // Fetch driver info if assigned
+        if (routeData.driver_id) {
+          try {
+            const driversRes = await apiClient.get('/dashboard/drivers')
+            const driver = driversRes.data.find((d: User) => d.id === routeData.driver_id)
+            if (driver) {
+              assignedDriver.value = driver
+            }
+          } catch (err) {
+            console.warn('Could not fetch driver info', err)
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Route info not available for this order yet.', err)
+    }
+  } catch (err) {
+    console.error('Failed to fetch order details:', err)
+    error.value = "Failed to load order details. It might not exist or you don't have access."
+  } finally {
+    isLoading.value = false
+  }
+}
 
 const handleCancel = async () => {
   if (!order.value) return
@@ -38,7 +84,7 @@ const handleCancel = async () => {
     await fetchData()
   } catch (err) {
     console.error('Failed to cancel order:', err)
-    modalErrorMessage.value = getErrorMessage(err)
+    modalErrorMessage.value = 'Failed to cancel order. It might already be in progress.'
     showErrorModal.value = true
   } finally {
     isCancelling.value = false
@@ -54,67 +100,11 @@ const handleConfirmReceipt = async () => {
     await fetchData()
   } catch (err) {
     console.error('Failed to confirm receipt:', err)
-    modalErrorMessage.value = getErrorMessage(err)
+    modalErrorMessage.value =
+      'Failed to confirm receipt. The backend endpoint might not be ready yet.'
     showErrorModal.value = true
   } finally {
     isConfirming.value = false
-  }
-}
-
-const fetchData = async () => {
-  isLoading.value = true
-  error.value = ''
-  try {
-    let orderData: Order | null = null
-
-    if (authStore.isManager) {
-      const allOrdersRes = await apiClient.get('/dashboard/orders')
-      orderData = allOrdersRes.data.find((o: Order) => o.id === Number(orderId)) || null
-    } else {
-      try {
-        const orderRes = await apiClient.get(`/dashboard/orders/${orderId}`)
-        orderData = orderRes.data
-      } catch (err) {
-        console.warn('Could not fetch order directly, likely access denied.', err)
-      }
-    }
-
-    if (!orderData) {
-      throw new Error('Order not found')
-    }
-    order.value = orderData
-
-    const routeRes = await apiClient.get(`/dashboard/routes`, {
-      params: { order_id: orderId },
-    })
-
-    if (routeRes.data && routeRes.data.length > 0) {
-      const routeData = routeRes.data[0]
-      try {
-        const statusesRes = await apiClient.get(`/dashboard/routes/${routeData.id}/statuses`)
-        routeData.statuses = statusesRes.data
-      } catch (err) {
-        console.error('Failed to fetch route statuses:', err)
-      }
-      route.value = routeData
-
-      if (routeData.driver_id) {
-        try {
-          const driversRes = await apiClient.get('/dashboard/drivers')
-          const driver = driversRes.data.find((d: User) => d.id === routeData.driver_id)
-          if (driver) {
-            assignedDriver.value = driver
-          }
-        } catch (err) {
-          console.error('Failed to fetch driver info:', err)
-        }
-      }
-    }
-  } catch (err: unknown) {
-    console.error('Failed to fetch shipment details:', err)
-    error.value = getErrorMessage(err)
-  } finally {
-    isLoading.value = false
   }
 }
 
@@ -122,12 +112,12 @@ onMounted(fetchData)
 </script>
 
 <template>
-  <div v-if="isLoading" class="flex justify-center items-center min-h-screen">
+  <div v-if="isLoading" class="flex justify-center items-center min-h-[400px]">
     <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary"></div>
   </div>
 
   <div v-else-if="error || !order" class="p-8 text-center">
-    <div class="bg-red-50 border border-red-200 text-red-600 p-4 rounded mb-4">
+    <div class="bg-red-50 border border-red-200 text-red-600 p-4 rounded mb-4 max-w-2xl mx-auto">
       {{ error || 'Order not found' }}
     </div>
     <BaseButton @click="router.back()">Go Back</BaseButton>
@@ -138,13 +128,13 @@ onMounted(fetchData)
       class="flex items-center gap-1 text-text-secondary text-[10px] md:text-xs mb-4 hover:text-text-primary transition-colors uppercase font-black tracking-widest"
       @click="router.back()"
     >
-      <ArrowLeft class="w-3 h-3" /> BACK TO SHIPMENTS
+      <ArrowLeft class="w-3 h-3" /> BACK TO MY ORDERS
     </button>
 
     <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
       <div>
         <h1 class="text-2xl md:text-[32px] font-bold text-text-primary leading-tight">
-          Tracking: {{ order.title }}
+          Order: {{ order.title }}
         </h1>
         <div class="flex items-center gap-2 mt-2">
           <span
@@ -188,11 +178,11 @@ onMounted(fetchData)
           :order="order"
           :route="route"
           :assigned-driver="assignedDriver"
-          @refresh="fetchData"
+          read-only
         />
       </div>
       <div class="space-y-8">
-        <ShipmentStatusTimeline v-if="route" :route="route" @refresh="fetchData" />
+        <ShipmentStatusTimeline v-if="route" :route="route" />
         <div
           v-else
           class="bg-bg-canvas border border-border-default rounded-lg p-10 text-center text-text-placeholder text-sm flex flex-col items-center gap-3"
@@ -207,9 +197,9 @@ onMounted(fetchData)
 
     <BaseModal
       :show="showCancelModal"
-      title="Cancel Shipment"
-      message="Are you sure you want to cancel this shipment? This will stop the delivery process immediately."
-      confirm-text="Yes, Cancel Shipment"
+      title="Cancel Order"
+      message="Are you sure you want to cancel this delivery request? This action cannot be undone."
+      confirm-text="Yes, Cancel Order"
       variant="danger"
       @confirm="handleCancel"
       @cancel="showCancelModal = false"

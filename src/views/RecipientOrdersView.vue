@@ -6,6 +6,7 @@ import type { Order } from '@/types'
 import { Package, Search, Filter, Plus, ChevronRight } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import { getErrorMessage } from '@/utils/errorHandler'
 
 const router = useRouter()
 const orders = ref<Order[]>([])
@@ -13,12 +14,20 @@ const isLoading = ref(true)
 const error = ref('')
 
 const showCancelModal = ref(false)
+const showConfirmModal = ref(false)
 const orderToCancel = ref<number | null>(null)
+const orderToConfirm = ref<number | null>(null)
 
 const confirmCancel = (e: Event, orderId: number) => {
   e.stopPropagation()
   orderToCancel.value = orderId
   showCancelModal.value = true
+}
+
+const openConfirmModal = (e: Event, orderId: number) => {
+  e.stopPropagation()
+  orderToConfirm.value = orderId
+  showConfirmModal.value = true
 }
 
 const handleCancel = async () => {
@@ -31,6 +40,23 @@ const handleCancel = async () => {
     await fetchOrders()
   } catch (err) {
     console.error('Failed to cancel order:', err)
+    alert(getErrorMessage(err))
+  }
+}
+
+const handleConfirmReceipt = async () => {
+  if (!orderToConfirm.value) return
+
+  try {
+    await ordersApi.confirmReceipt(orderToConfirm.value)
+    showConfirmModal.value = false
+    orderToConfirm.value = null
+    await fetchOrders()
+  } catch (err) {
+    console.error('Failed to confirm receipt:', err)
+    showConfirmModal.value = false
+    orderToConfirm.value = null
+    alert(getErrorMessage(err))
   }
 }
 
@@ -42,7 +68,7 @@ const fetchOrders = async () => {
     orders.value = response.data
   } catch (err: unknown) {
     console.error('Failed to fetch orders:', err)
-    error.value = 'Failed to load orders. Please try again.'
+    error.value = getErrorMessage(err)
   } finally {
     isLoading.value = false
   }
@@ -156,7 +182,7 @@ onMounted(fetchOrders)
               v-for="order in orders"
               :key="order.id"
               class="hover:bg-bg-surface transition-colors cursor-pointer group"
-              @click="router.push(`/shipments/${order.id}`)"
+              @click="router.push(`/recipient/orders/${order.id}`)"
             >
               <td class="py-4 px-6">
                 <div
@@ -196,6 +222,13 @@ onMounted(fetchOrders)
                 >
                   Cancel
                 </button>
+                <button
+                  v-if="order.status.toUpperCase() === 'IN_PROGRESS'"
+                  @click="openConfirmModal($event, order.id)"
+                  class="text-green-500 font-bold text-xs hover:underline mr-4"
+                >
+                  Confirm Receipt
+                </button>
                 <button class="text-brand-primary font-bold text-xs hover:underline">
                   View Details
                 </button>
@@ -213,6 +246,15 @@ onMounted(fetchOrders)
         variant="danger"
         @confirm="handleCancel"
         @cancel="showCancelModal = false"
+      />
+
+      <BaseModal
+        :show="showConfirmModal"
+        title="Confirm Receipt"
+        message="Are you sure you have received this order? This will mark the order as completed."
+        confirm-text="Yes, I Received It"
+        @confirm="handleConfirmReceipt"
+        @cancel="showConfirmModal = false"
       />
     </div>
   </div>

@@ -7,7 +7,7 @@ import IconEye from '@/components/icons/IconEye.vue'
 import AuthSidebar from '@/components/auth/AuthSidebar.vue'
 import apiClient from '@/api/axios.ts'
 import router from '@/router'
-import axios from 'axios'
+import { getErrorMessage } from '@/utils/errorHandler'
 
 const fullName = ref('')
 const email = ref('')
@@ -15,6 +15,13 @@ const phoneNumber = ref('')
 const role = ref('')
 const password = ref('')
 const confirmPassword = ref('')
+
+const fullNameError = ref('')
+const emailError = ref('')
+const phoneNumberError = ref('')
+const roleError = ref('')
+const passwordError = ref('')
+const confirmPasswordError = ref('')
 
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
@@ -28,14 +35,64 @@ const roleOptions = [
   { value: 'driver', label: 'Driver' },
 ]
 
-const handleRegister = async () => {
-  errorMessage.value = ''
+const validateForm = () => {
+  let isValid = true
+  fullNameError.value = ''
+  emailError.value = ''
+  phoneNumberError.value = ''
+  roleError.value = ''
+  passwordError.value = ''
+  confirmPasswordError.value = ''
 
-  if (password.value !== confirmPassword.value) {
-    errorMessage.value = 'Passwords does not match'
-    return
+  if (!fullName.value) {
+    fullNameError.value = 'Full name is required'
+    isValid = false
   }
 
+  if (!email.value) {
+    emailError.value = 'Email is required'
+    isValid = false
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+    emailError.value = 'Invalid email format'
+    isValid = false
+  }
+
+  if (!phoneNumber.value) {
+    phoneNumberError.value = 'Phone number is required'
+    isValid = false
+  } else if (!/^\+?380\d{9}$/.test(phoneNumber.value)) {
+    phoneNumberError.value = 'Invalid phone format (e.g. +380991234567)'
+    isValid = false
+  }
+
+  if (!role.value) {
+    roleError.value = 'Please select a role'
+    isValid = false
+  }
+
+  if (!password.value) {
+    passwordError.value = 'Password is required'
+    isValid = false
+  } else if (password.value.length < 8) {
+    passwordError.value = 'Password must be at least 8 characters'
+    isValid = false
+  }
+
+  if (!confirmPassword.value) {
+    confirmPasswordError.value = 'Please confirm your password'
+    isValid = false
+  } else if (password.value !== confirmPassword.value) {
+    confirmPasswordError.value = 'Passwords do not match'
+    isValid = false
+  }
+
+  return isValid
+}
+
+const handleRegister = async () => {
+  if (!validateForm()) return
+
+  errorMessage.value = ''
   isLoading.value = true
 
   try {
@@ -49,20 +106,7 @@ const handleRegister = async () => {
 
     router.push('/login')
   } catch (error: unknown) {
-    if (axios.isAxiosError(error)) {
-      const detail = error.response?.data?.detail
-
-      if (Array.isArray(detail)) {
-        console.error('Помилки валідації від бекенду:', detail)
-        errorMessage.value = 'Please, fill all the necessary fields correctly.'
-      } else if (typeof detail === 'string') {
-        errorMessage.value = detail
-      } else {
-        errorMessage.value = 'Server connection failed'
-      }
-    } else {
-      errorMessage.value = 'Unknown error'
-    }
+    errorMessage.value = getErrorMessage(error)
   } finally {
     isLoading.value = false
   }
@@ -73,29 +117,53 @@ const handleRegister = async () => {
   <div class="flex min-h-screen font-roboto bg-bg-canvas">
     <AuthSidebar />
 
-    <div class="flex-1 flex flex-col justify-center px-10">
-      <div class="w-full max-w-[480px] mx-auto flex flex-col gap-8">
+    <div class="flex-1 flex flex-col justify-center px-6 sm:px-10 py-8 sm:py-0">
+      <div class="w-full max-w-[480px] mx-auto flex flex-col gap-6 sm:gap-8">
         <div>
-          <h1 class="text-text-primary text-[42px] font-bold">Create an account</h1>
+          <h1 class="text-text-primary text-3xl sm:text-[42px] font-bold">Create an account</h1>
           <p class="text-text-secondary mt-2">Join LogiFlow to manage your fleet efficiently.</p>
         </div>
 
         <form class="flex flex-col gap-6" @submit.prevent="handleRegister">
-          <div class="grid grid-cols-2 gap-4">
-            <BaseInput v-model="fullName" label="Full Name" placeholder="Full Name" />
-          </div>
+          <BaseInput
+            v-model="fullName"
+            label="Full Name"
+            placeholder="Full Name"
+            :error="fullNameError"
+            @input="fullNameError = ''"
+          />
 
-          <BaseInput v-model="email" label="Email Address" placeholder="user@gmail.com" />
+          <BaseInput
+            v-model="email"
+            label="Email Address"
+            placeholder="user@gmail.com"
+            :error="emailError"
+            @input="emailError = ''"
+          />
 
-          <BaseInput v-model="phoneNumber" label="Phone Number" placeholder="+380991234567" />
+          <BaseInput
+            v-model="phoneNumber"
+            label="Phone Number"
+            placeholder="+380991234567"
+            :error="phoneNumberError"
+            @input="phoneNumberError = ''"
+          />
 
-          <BaseSelect v-model="role" label="Select Role" :options="roleOptions" />
+          <BaseSelect
+            v-model="role"
+            label="Select Role"
+            :options="roleOptions"
+            :error="roleError"
+            @update:model-value="roleError = ''"
+          />
 
           <BaseInput
             v-model="password"
             label="Password"
             :type="showPassword ? 'text' : 'password'"
             placeholder="Min. 8 characters"
+            :error="passwordError"
+            @input="passwordError = ''"
           >
             <template #suffix>
               <button type="button" @click="showPassword = !showPassword">
@@ -108,6 +176,8 @@ const handleRegister = async () => {
             label="Confirm Password"
             :type="showConfirmPassword ? 'text' : 'password'"
             placeholder="Repeat password"
+            :error="confirmPasswordError"
+            @input="confirmPasswordError = ''"
           >
             <template #suffix>
               <button type="button" @click="showConfirmPassword = !showConfirmPassword">

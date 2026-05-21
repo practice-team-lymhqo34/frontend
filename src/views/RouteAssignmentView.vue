@@ -8,13 +8,15 @@ import {
   AlertCircle,
   ChevronRight,
   Loader2,
+  Home,
+  MapPin,
 } from 'lucide-vue-next'
 import { routesApi } from '@/api/routes'
 import { ordersApi } from '@/api/orders'
 import type { Order } from '@/types/order'
 import type { User as UserType } from '@/types/user'
 import type { Vehicle } from '@/types/vehicle'
-import axios from 'axios'
+import { getErrorMessage } from '@/utils/errorHandler'
 
 const unassignedOrders = ref<Order[]>([])
 const drivers = ref<(UserType & { vehicle?: Vehicle })[]>([])
@@ -75,17 +77,13 @@ const handleAssign = async () => {
       assignmentSuccess.value = false
     }, 2000)
   } catch (error: unknown) {
-    if (axios.isAxiosError(error) && error.response?.status === 409) {
-      assignmentError.value = 'This order has already been assigned to another driver.'
-      // Оновлюємо список, щоб прибрати вже зайняте замовлення
-      try {
-        unassignedOrders.value = await ordersApi.getUnassignedOrders()
-      } catch (e) {
-        console.error('Failed to refresh orders:', e)
-      }
-    } else {
-      console.error('Assignment failed', error)
-      assignmentError.value = 'Failed to assign route. Please try again later.'
+    console.error('Assignment failed', error)
+    assignmentError.value = getErrorMessage(error)
+
+    try {
+      unassignedOrders.value = await ordersApi.getUnassignedOrders()
+    } catch (e) {
+      console.error('Failed to refresh orders:', e)
     }
   } finally {
     isSubmitting.value = false
@@ -267,11 +265,15 @@ const handleAssign = async () => {
                   Order
                 </div>
                 <div class="font-bold text-brand-primary">{{ selectedOrder.title }}</div>
-                <div class="text-[10px] text-text-secondary mt-2 flex flex-col gap-1">
-                  <span class="truncate" title="Origin">🏠 {{ selectedOrder.origin_address }}</span>
-                  <span class="truncate" title="Destination"
-                    >📍 {{ selectedOrder.destination_address }}</span
-                  >
+                <div class="text-[10px] text-text-secondary mt-2 flex flex-col gap-1.5">
+                  <span class="flex items-center gap-1.5 truncate" title="Origin">
+                    <Home class="w-3 h-3 text-brand-primary shrink-0" />
+                    {{ selectedOrder.origin_address }}
+                  </span>
+                  <span class="flex items-center gap-1.5 truncate" title="Destination">
+                    <MapPin class="w-3 h-3 text-brand-primary shrink-0" />
+                    {{ selectedOrder.destination_address }}
+                  </span>
                 </div>
               </div>
               <ChevronRight class="w-4 h-4 text-text-placeholder rotate-90 sm:rotate-0" />
@@ -284,10 +286,9 @@ const handleAssign = async () => {
                   Driver
                 </div>
                 <div class="font-bold text-brand-primary">{{ selectedDriver.full_name }}</div>
-                <div class="text-[10px] text-text-secondary mt-2">
-                  🚛 {{ selectedDriver.vehicle?.brand }} ({{
-                    selectedDriver.vehicle?.license_plate
-                  }})
+                <div class="text-[10px] text-text-secondary mt-2 flex items-center gap-1.5">
+                  <Truck class="w-3 h-3 text-brand-primary shrink-0" />
+                  {{ selectedDriver.vehicle?.brand }} ({{ selectedDriver.vehicle?.license_plate }})
                 </div>
               </div>
             </div>
