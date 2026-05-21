@@ -6,6 +6,7 @@ import TodaysRouteView from '@/views/TodaysRouteView.vue'
 import RecipientLayout from '@/layouts/RecipientLayout.vue'
 import RecipientView from '@/views/RecipientView.vue'
 import CreateDelivery from '@/views/CreateDelivery.vue'
+import RecipientOrderDetailsView from '@/views/RecipientOrderDetailsView.vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import DashboardView from '@/views/DashboardView.vue'
 import ShipmentsListView from '@/views/ShipmentsListView.vue'
@@ -73,6 +74,11 @@ const router = createRouter({
           path: 'orders',
           name: 'recipient-orders',
           component: () => import('../views/RecipientOrdersView.vue'),
+        },
+        {
+          path: 'orders/:id',
+          name: 'recipient-order-details',
+          component: RecipientOrderDetailsView,
         },
         {
           path: 'active',
