@@ -14,9 +14,7 @@ export const ordersApi = {
 
   async getUnassignedOrders(): Promise<Order[]> {
     const orders = await this.getOrders()
-    return orders.filter(
-      (order) => order.status === 'PENDING' || (order.status as string) === 'pending',
-    )
+    return orders.filter((order) => order.status === 'pending')
   },
 
   async getTemplates(): Promise<Order[]> {

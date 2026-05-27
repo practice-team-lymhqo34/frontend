@@ -1,11 +1,10 @@
 import type { MonthlyExpensesResponse } from '@/types/statistics'
 
 export const getMonthlyExpenses = async (): Promise<MonthlyExpensesResponse> => {
-  // Simulating API call delay
   await new Promise((resolve) => setTimeout(resolve, 800))
 
   // Mock data for the current month
-  const mockData: MonthlyExpensesResponse = {
+  return {
     total_amount: 45200.5,
     period: 'May 2026',
     data: [
@@ -23,6 +22,4 @@ export const getMonthlyExpenses = async (): Promise<MonthlyExpensesResponse> => 
       { date: '2026-05-27', amount: 2100 },
     ],
   }
-
-  return mockData
 }
