@@ -28,10 +28,13 @@ const steps = computed<TimelineStep[]>(() => {
   const lastCompleted = [...allSteps].reverse().find((s) => completedStatuses.has(s.statusKey))
 
   return allSteps.map((step) => {
-    if (completedStatuses.has(step.statusKey) && step.statusKey !== lastCompleted?.statusKey) {
+    const isCompleted = completedStatuses.has(step.statusKey)
+    const isLast = step.statusKey === lastCompleted?.statusKey
+
+    if (isCompleted && (step.statusKey === 'delivered' || !isLast)) {
       return { ...step, state: 'completed' } as TimelineStep
     }
-    if (step.statusKey === lastCompleted?.statusKey) {
+    if (isLast) {
       return { ...step, state: 'current' } as TimelineStep
     }
     return { ...step, state: 'pending' } as TimelineStep

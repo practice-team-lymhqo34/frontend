@@ -11,6 +11,7 @@ export interface Order {
   destination_address: string
   is_template: boolean
   created_at: string
+  received_at?: string | null
 }
 
 export interface OrderCreate {

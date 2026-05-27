@@ -44,12 +44,46 @@ onMounted(async () => {
 
 const selectedOrder = ref<Order | null>(null)
 const selectedDriver = ref<(UserType & { vehicle?: Vehicle }) | null>(null)
+const selectedEta = ref('')
+
+// Initialize default ETA (+3 hours from now)
+const setDefaultEta = () => {
+  const date = new Date()
+  date.setHours(date.getHours() + 3)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  selectedEta.value = `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
+onMounted(async () => {
+  setDefaultEta()
+  try {
+    unassignedOrders.value = await ordersApi.getUnassignedOrders()
+  } catch (error) {
+    console.error('Failed to fetch orders:', error)
+  } finally {
+    isLoadingOrders.value = false
+  }
+
+  try {
+    const fetchedDrivers = await routesApi.getDrivers()
+    drivers.value = fetchedDrivers as (UserType & { vehicle?: Vehicle })[]
+  } catch (error) {
+    console.error('Failed to fetch drivers:', error)
+  } finally {
+    isLoadingDrivers.value = false
+  }
+})
+
 const isSubmitting = ref(false)
 const assignmentSuccess = ref(false)
 const assignmentError = ref('')
 
 const canAssign = computed(() => {
-  if (!selectedOrder.value || !selectedDriver.value?.vehicle) return false
+  if (!selectedOrder.value || !selectedDriver.value?.vehicle || !selectedEta.value) return false
   return selectedOrder.value.weight <= selectedDriver.value.vehicle.max_weight
 })
 
@@ -58,6 +92,7 @@ const handleAssign = async () => {
     !selectedOrder.value ||
     !selectedDriver.value ||
     !selectedDriver.value.vehicle ||
+    !selectedEta.value ||
     !canAssign.value
   )
     return
@@ -65,7 +100,8 @@ const handleAssign = async () => {
   isSubmitting.value = true
   assignmentError.value = ''
   try {
-    await routesApi.assignRoute(selectedOrder.value.id, selectedDriver.value.id)
+    const isoEta = new Date(selectedEta.value).toISOString()
+    await routesApi.assignRoute(selectedOrder.value.id, selectedDriver.value.id, isoEta)
 
     assignmentSuccess.value = true
     const assignedOrderId = selectedOrder.value.id
@@ -74,6 +110,7 @@ const handleAssign = async () => {
       unassignedOrders.value = unassignedOrders.value.filter((o) => o.id !== assignedOrderId)
       selectedOrder.value = null
       selectedDriver.value = null
+      setDefaultEta()
       assignmentSuccess.value = false
     }, 2000)
   } catch (error: unknown) {
@@ -291,6 +328,22 @@ const handleAssign = async () => {
                   {{ selectedDriver.vehicle?.brand }} ({{ selectedDriver.vehicle?.license_plate }})
                 </div>
               </div>
+            </div>
+
+            <div class="mb-6">
+              <label
+                class="block text-[10px] text-text-secondary mb-2 uppercase font-black tracking-widest"
+              >
+                Estimated Arrival Time (ETA)
+              </label>
+              <input
+                v-model="selectedEta"
+                type="datetime-local"
+                class="w-full p-3 bg-bg-surface border border-border-default rounded-lg focus:border-brand-primary outline-none transition-colors font-bold text-sm"
+              />
+              <p class="text-[10px] text-text-placeholder mt-2 italic">
+                * Specify when the driver is expected to reach the destination.
+              </p>
             </div>
 
             <div

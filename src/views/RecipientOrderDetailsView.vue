@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, Navigation, Trash2 } from 'lucide-vue-next'
-import type { Order, Route, User } from '@/types'
+import { ArrowLeft, Navigation, Trash2, CheckCircle2 } from 'lucide-vue-next'
+import type { Order, Route, RouteStatus, User } from '@/types'
 import { ordersApi } from '@/api/orders'
 import apiClient from '@/api/axios'
 import ShipmentPackageDetails from '@/components/shipment-details/ShipmentPackageDetails.vue'
 import ShipmentStatusTimeline from '@/components/shipment-details/ShipmentStatusTimeline.vue'
+import ShipmentETACard from '@/components/shipment-details/ShipmentETACard.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 
@@ -27,6 +28,16 @@ const showConfirmModal = ref(false)
 const showErrorModal = ref(false)
 const modalErrorMessage = ref('')
 
+const isInTransit = computed(() => {
+  if (!route.value?.statuses) return false
+  return (
+    route.value.statuses.some((s) => s.status === 'in_transit') &&
+    !route.value.statuses.some(
+      (s) => s.status === 'delivered' || s.status === 'failed' || s.status === 'cancelled',
+    )
+  )
+})
+
 const fetchData = async () => {
   isLoading.value = true
   error.value = ''
@@ -35,23 +46,33 @@ const fetchData = async () => {
     const orderData = await ordersApi.getOrder(orderId)
     order.value = orderData
 
-    // Fetch route info (if exists)
     try {
       const routeRes = await apiClient.get('/dashboard/routes', {
         params: { order_id: orderId },
       })
       if (routeRes.data && routeRes.data.length > 0) {
         const routeData = routeRes.data[0]
-        // Fetch statuses for the route
         try {
           const statusesRes = await apiClient.get(`/dashboard/routes/${routeData.id}/statuses`)
           routeData.statuses = statusesRes.data
         } catch (err) {
           console.warn('Could not fetch route statuses', err)
         }
+
+        // MOCK: Add delay info if in_transit for testing purposes
+        const transitStatus = routeData.statuses?.find(
+          (s: RouteStatus) => s.status === 'in_transit',
+        )
+        if (transitStatus) {
+          routeData.is_delayed = true
+          routeData.delay_minutes = 75
+          const originalEta = new Date(routeData.eta)
+          originalEta.setMinutes(originalEta.getMinutes() - 75)
+          routeData.original_eta = originalEta.toISOString()
+        }
+
         route.value = routeData
 
-        // Fetch driver info if assigned
         if (routeData.driver_id) {
           try {
             const driversRes = await apiClient.get('/dashboard/drivers')
@@ -100,8 +121,7 @@ const handleConfirmReceipt = async () => {
     await fetchData()
   } catch (err) {
     console.error('Failed to confirm receipt:', err)
-    modalErrorMessage.value =
-      'Failed to confirm receipt. The backend endpoint might not be ready yet.'
+    modalErrorMessage.value = 'Failed to confirm receipt. Please try again later.'
     showErrorModal.value = true
   } finally {
     isConfirming.value = false
@@ -137,13 +157,25 @@ onMounted(fetchData)
           Order: {{ order.title }}
         </h1>
         <div class="flex items-center gap-2 mt-2">
-          <span
-            class="text-[10px] bg-brand-primary/10 text-brand-primary px-2 py-0.5 rounded font-black uppercase tracking-widest"
+          <div
+            class="flex items-center gap-1.5 px-2 py-0.5 rounded font-black uppercase tracking-widest text-[10px]"
+            :class="
+              order.status.toUpperCase() === 'COMPLETED'
+                ? 'bg-green-100 text-green-600'
+                : 'bg-brand-primary/10 text-brand-primary'
+            "
           >
+            <CheckCircle2 v-if="order.status.toUpperCase() === 'COMPLETED'" class="w-3 h-3" />
             {{ order.status }}
-          </span>
+          </div>
           <span class="text-[10px] text-text-placeholder font-medium uppercase tracking-tighter">
             Created: {{ new Date(order.created_at).toLocaleDateString() }}
+          </span>
+          <span
+            v-if="order.received_at"
+            class="text-[10px] text-green-600 font-medium uppercase tracking-tighter"
+          >
+            Received: {{ new Date(order.received_at).toLocaleDateString() }}
           </span>
         </div>
       </div>
@@ -182,6 +214,7 @@ onMounted(fetchData)
         />
       </div>
       <div class="space-y-8">
+        <ShipmentETACard v-if="isInTransit && route" :route="route" />
         <ShipmentStatusTimeline v-if="route" :route="route" />
         <div
           v-else
