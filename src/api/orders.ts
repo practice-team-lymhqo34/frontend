@@ -35,6 +35,6 @@ export const ordersApi = {
   },
 
   async confirmReceipt(orderId: number): Promise<void> {
-    await apiClient.post(`/dashboard/orders/${orderId}/confirm-receipt`)
+    await apiClient.post(`/orders/${orderId}/confirm`)
   },
 }

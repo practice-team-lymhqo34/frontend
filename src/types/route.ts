@@ -7,6 +7,9 @@ export interface Route {
   vehicle_id: number | null
   started_at: string | null
   eta: string
+  original_eta?: string | null
+  is_delayed?: boolean
+  delay_minutes?: number
   completed_at: string | null
   statuses?: RouteStatus[]
   order?: Order

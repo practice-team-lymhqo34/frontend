@@ -88,7 +88,7 @@ const handleUpload = async () => {
     </div>
 
     <div v-else class="relative rounded-xl overflow-hidden border border-border-default">
-      <img :src="preview" class="w-full max-h-64 object-cover" />
+      <img :src="preview" class="w-full max-h-64 object-cover" alt="img" />
       <button
         @click="clearFile"
         class="absolute top-2 right-2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow hover:bg-bg-surface"

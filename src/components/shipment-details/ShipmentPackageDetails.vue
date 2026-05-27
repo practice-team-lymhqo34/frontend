@@ -94,7 +94,17 @@ const formatDate = (date: string | null | undefined): string => {
 
       <div class="grid grid-cols-2 items-center px-6 py-3">
         <span class="text-text-secondary text-sm">ETA</span>
-        <span class="text-text-primary text-sm">{{ formatDate(route?.eta) }}</span>
+        <div class="flex flex-col">
+          <span
+            class="text-sm font-bold"
+            :class="route?.is_delayed ? 'text-amber-600' : 'text-text-primary'"
+          >
+            {{ formatDate(route?.eta) }}
+          </span>
+          <span v-if="route?.is_delayed" class="text-[9px] text-amber-600 font-black uppercase">
+            {{ route.delay_minutes }}m delay
+          </span>
+        </div>
       </div>
 
       <div class="grid grid-cols-2 items-center px-6 py-3">

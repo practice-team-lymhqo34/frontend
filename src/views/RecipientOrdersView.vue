@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import apiClient from '@/api/axios'
 import { ordersApi } from '@/api/orders'
-import type { Order } from '@/types'
+import type { Order, Route } from '@/types'
 import { Package, Search, Filter, Plus, ChevronRight } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import BaseModal from '@/components/ui/BaseModal.vue'
@@ -10,6 +10,7 @@ import { getErrorMessage } from '@/utils/errorHandler'
 
 const router = useRouter()
 const orders = ref<Order[]>([])
+const routes = ref<Route[]>([])
 const isLoading = ref(true)
 const error = ref('')
 
@@ -64,14 +65,27 @@ const fetchOrders = async () => {
   isLoading.value = true
   error.value = ''
   try {
-    const response = await apiClient.get('/orders/')
-    orders.value = response.data
+    const [ordersRes, routesRes] = await Promise.all([
+      apiClient.get('/orders/'),
+      apiClient.get('/dashboard/routes'),
+    ])
+    orders.value = ordersRes.data
+    routes.value = routesRes.data
   } catch (err: unknown) {
-    console.error('Failed to fetch orders:', err)
+    console.error('Failed to fetch orders or routes:', err)
     error.value = getErrorMessage(err)
   } finally {
     isLoading.value = false
   }
+}
+
+const getOrderEta = (orderId: number) => {
+  const route = routes.value.find((r) => r.order_id === orderId)
+  if (!route) return null
+  return new Date(route.eta).toLocaleTimeString('uk-UA', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 const getStatusClasses = (status: string) => {
@@ -165,6 +179,9 @@ onMounted(fetchOrders)
                 Date
               </th>
               <th class="py-4 px-6 text-xs font-bold text-text-secondary uppercase tracking-wider">
+                ETA
+              </th>
+              <th class="py-4 px-6 text-xs font-bold text-text-secondary uppercase tracking-wider">
                 Weight
               </th>
               <th class="py-4 px-6 text-xs font-bold text-text-secondary uppercase tracking-wider">
@@ -205,6 +222,15 @@ onMounted(fetchOrders)
               <td class="py-4 px-6 text-sm text-text-secondary">
                 {{ new Date(order.created_at).toLocaleDateString() }}
               </td>
+              <td class="py-4 px-6">
+                <div v-if="getOrderEta(order.id)" class="flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-brand-primary animate-pulse"></span>
+                  <span class="text-sm font-bold text-text-primary">{{
+                    getOrderEta(order.id)
+                  }}</span>
+                </div>
+                <span v-else class="text-xs text-text-placeholder italic">TBD</span>
+              </td>
               <td class="py-4 px-6 text-sm text-text-primary font-medium">{{ order.weight }} kg</td>
               <td class="py-4 px-6">
                 <span
@@ -213,6 +239,9 @@ onMounted(fetchOrders)
                 >
                   {{ order.status }}
                 </span>
+                <div v-if="order.received_at" class="text-[8px] text-green-600 mt-1 font-bold">
+                  RECEIVED: {{ new Date(order.received_at).toLocaleDateString() }}
+                </div>
               </td>
               <td class="py-4 px-6 text-right whitespace-nowrap">
                 <button
