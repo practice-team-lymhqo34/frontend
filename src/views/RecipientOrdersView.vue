@@ -16,8 +16,10 @@ const error = ref('')
 
 const showCancelModal = ref(false)
 const showConfirmModal = ref(false)
+const showRefuseModal = ref(false)
 const orderToCancel = ref<number | null>(null)
 const orderToConfirm = ref<number | null>(null)
+const orderToRefuse = ref<number | null>(null)
 
 const confirmCancel = (e: Event, orderId: number) => {
   e.stopPropagation()
@@ -31,6 +33,12 @@ const openConfirmModal = (e: Event, orderId: number) => {
   showConfirmModal.value = true
 }
 
+const openRefuseModal = (e: Event, orderId: number) => {
+  e.stopPropagation()
+  orderToRefuse.value = orderId
+  showRefuseModal.value = true
+}
+
 const handleCancel = async () => {
   if (!orderToCancel.value) return
 
@@ -41,6 +49,20 @@ const handleCancel = async () => {
     await fetchOrders()
   } catch (err) {
     console.error('Failed to cancel order:', err)
+    alert(getErrorMessage(err))
+  }
+}
+
+const handleRefuse = async () => {
+  if (!orderToRefuse.value) return
+
+  try {
+    await ordersApi.cancelOrder(orderToRefuse.value)
+    showRefuseModal.value = false
+    orderToRefuse.value = null
+    await fetchOrders()
+  } catch (err) {
+    console.error('Failed to refuse order:', err)
     alert(getErrorMessage(err))
   }
 }
@@ -253,6 +275,13 @@ onMounted(fetchOrders)
                 </button>
                 <button
                   v-if="order.status.toUpperCase() === 'IN_PROGRESS'"
+                  @click="openRefuseModal($event, order.id)"
+                  class="text-orange-500 font-bold text-xs hover:underline mr-4"
+                >
+                  Refuse
+                </button>
+                <button
+                  v-if="order.status.toUpperCase() === 'IN_PROGRESS'"
                   @click="openConfirmModal($event, order.id)"
                   class="text-green-500 font-bold text-xs hover:underline mr-4"
                 >
@@ -284,6 +313,16 @@ onMounted(fetchOrders)
         confirm-text="Yes, I Received It"
         @confirm="handleConfirmReceipt"
         @cancel="showConfirmModal = false"
+      />
+
+      <BaseModal
+        :show="showRefuseModal"
+        title="Refuse Cargo"
+        message="Are you sure you want to refuse this cargo? This will mark the delivery as refused/canceled in the system."
+        confirm-text="Yes, Refuse Cargo"
+        variant="danger"
+        @confirm="handleRefuse"
+        @cancel="showRefuseModal = false"
       />
     </div>
   </div>

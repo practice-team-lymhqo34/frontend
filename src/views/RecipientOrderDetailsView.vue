@@ -23,8 +23,10 @@ const error = ref('')
 
 const isCancelling = ref(false)
 const isConfirming = ref(false)
+const isRefusing = ref(false)
 const showCancelModal = ref(false)
 const showConfirmModal = ref(false)
+const showRefuseModal = ref(false)
 const showErrorModal = ref(false)
 const modalErrorMessage = ref('')
 
@@ -110,6 +112,22 @@ const handleCancel = async () => {
   }
 }
 
+const handleRefuse = async () => {
+  if (!order.value) return
+  showRefuseModal.value = false
+  isRefusing.value = true
+  try {
+    await ordersApi.cancelOrder(order.value.id)
+    await fetchData()
+  } catch (err) {
+    console.error('Failed to refuse cargo:', err)
+    modalErrorMessage.value = 'Failed to refuse cargo. Please try again later.'
+    showErrorModal.value = true
+  } finally {
+    isRefusing.value = false
+  }
+}
+
 const handleConfirmReceipt = async () => {
   if (!order.value) return
   showConfirmModal.value = false
@@ -192,6 +210,16 @@ onMounted(fetchData)
 
         <BaseButton
           v-if="order.status.toUpperCase() === 'IN_PROGRESS'"
+          variant="secondary"
+          class="text-orange-600 border-orange-200 hover:bg-orange-50 px-6 py-2 transition-colors text-xs font-bold"
+          @click="showRefuseModal = true"
+          :disabled="isRefusing"
+        >
+          {{ isRefusing ? 'Refusing...' : 'Refuse Cargo' }}
+        </BaseButton>
+
+        <BaseButton
+          v-if="order.status.toUpperCase() === 'IN_PROGRESS'"
           variant="primary"
           class="bg-green-600 hover:bg-green-700 border-green-600 px-6 py-2 transition-colors text-xs font-bold"
           @click="showConfirmModal = true"
@@ -243,6 +271,16 @@ onMounted(fetchData)
       confirm-text="Yes, I Received It"
       @confirm="handleConfirmReceipt"
       @cancel="showConfirmModal = false"
+    />
+
+    <BaseModal
+      :show="showRefuseModal"
+      title="Refuse Cargo"
+      message="Are you sure you want to refuse this cargo? This will mark the delivery as refused/canceled in the system."
+      confirm-text="Yes, Refuse Cargo"
+      variant="danger"
+      @confirm="handleRefuse"
+      @cancel="showRefuseModal = false"
     />
 
     <BaseModal
