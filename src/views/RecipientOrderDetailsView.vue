@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, Navigation, Trash2, CheckCircle2 } from 'lucide-vue-next'
+import { ArrowLeft, CheckCircle2, Navigation, Trash2 } from 'lucide-vue-next'
 import type { Order, Route, RouteStatus, User } from '@/types'
 import { ordersApi } from '@/api/orders'
 import apiClient from '@/api/axios'
@@ -42,9 +42,7 @@ const fetchData = async () => {
   isLoading.value = true
   error.value = ''
   try {
-    // Fetch order
-    const orderData = await ordersApi.getOrder(orderId)
-    order.value = orderData
+    order.value = await ordersApi.getOrder(orderId)
 
     try {
       const routeRes = await apiClient.get('/dashboard/routes', {
