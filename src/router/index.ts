@@ -4,7 +4,6 @@ import RegisterView from '@/views/RegisterView.vue'
 import DriverLayout from '@/layouts/DriverLayout.vue'
 import TodaysRouteView from '@/views/TodaysRouteView.vue'
 import RecipientLayout from '@/layouts/RecipientLayout.vue'
-import RecipientView from '@/views/RecipientView.vue'
 import CreateDelivery from '@/views/CreateDelivery.vue'
 import RecipientOrderDetailsView from '@/views/RecipientOrderDetailsView.vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
@@ -83,12 +82,12 @@ const router = createRouter({
         {
           path: 'active',
           name: 'recipient-active',
-          component: RecipientView,
+          component: () => import('../views/RecipientActiveView.vue'),
         },
         {
           path: 'billing',
           name: 'recipient-billing',
-          component: RecipientView,
+          component: () => import('../views/RecipientView.vue'),
         },
         {
           path: 'delivery/new',
