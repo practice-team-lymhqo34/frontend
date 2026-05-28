@@ -1,5 +1,6 @@
 import apiClient from './axios'
 import type { Order } from '@/types/order'
+import type { Route } from '@/types'
 
 export const ordersApi = {
   async getOrders(): Promise<Order[]> {
@@ -13,8 +14,15 @@ export const ordersApi = {
   },
 
   async getUnassignedOrders(): Promise<Order[]> {
-    const orders = await this.getOrders()
-    return orders.filter((order) => order.status === 'pending')
+    const [orders, routesRes] = await Promise.all([
+      this.getOrders(),
+      apiClient.get<Route[]>('/dashboard/routes'),
+    ])
+
+    const routes = routesRes.data
+    const assignedOrderIds = new Set(routes.map((r) => r.order_id))
+
+    return orders.filter((order) => order.status === 'pending' && !assignedOrderIds.has(order.id))
   },
 
   async getTemplates(): Promise<Order[]> {

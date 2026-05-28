@@ -23,30 +23,10 @@ const drivers = ref<(UserType & { vehicle?: Vehicle })[]>([])
 const isLoadingOrders = ref(true)
 const isLoadingDrivers = ref(true)
 
-onMounted(async () => {
-  try {
-    unassignedOrders.value = await ordersApi.getUnassignedOrders()
-  } catch (error) {
-    console.error('Failed to fetch orders:', error)
-  } finally {
-    isLoadingOrders.value = false
-  }
-
-  try {
-    const fetchedDrivers = await routesApi.getDrivers()
-    drivers.value = fetchedDrivers as (UserType & { vehicle?: Vehicle })[]
-  } catch (error) {
-    console.error('Failed to fetch drivers:', error)
-  } finally {
-    isLoadingDrivers.value = false
-  }
-})
-
 const selectedOrder = ref<Order | null>(null)
 const selectedDriver = ref<(UserType & { vehicle?: Vehicle }) | null>(null)
 const selectedEta = ref('')
 
-// Initialize default ETA (+3 hours from now)
 const setDefaultEta = () => {
   const date = new Date()
   date.setHours(date.getHours() + 3)

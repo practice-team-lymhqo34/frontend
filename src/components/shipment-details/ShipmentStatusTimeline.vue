@@ -25,6 +25,11 @@ const allSteps: { label: string; statusKey: RouteStatusEnum }[] = [
 const steps = computed<TimelineStep[]>(() => {
   const completedStatuses = new Set((props.route.statuses ?? []).map((s) => s.status as string))
 
+  // If we have a driver_id, we consider it 'assigned' even if the status record is missing
+  if (props.route.driver_id && !completedStatuses.has('assigned')) {
+    completedStatuses.add('assigned')
+  }
+
   const lastCompleted = [...allSteps].reverse().find((s) => completedStatuses.has(s.statusKey))
 
   return allSteps.map((step) => {
