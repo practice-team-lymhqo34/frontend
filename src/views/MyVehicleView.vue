@@ -2,7 +2,17 @@
 import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
-import { Truck, AlertCircle, Save, Loader2, Gauge, Fuel, Wrench, Trash2 } from 'lucide-vue-next'
+import {
+  Truck,
+  AlertCircle,
+  Save,
+  Loader2,
+  Gauge,
+  Fuel,
+  Wrench,
+  Trash2,
+  Clock,
+} from 'lucide-vue-next'
 import { vehiclesApi } from '@/api/vehicles'
 import type { VehicleCreate, Vehicle } from '@/types/vehicle'
 import { getErrorMessage } from '@/utils/errorHandler'
@@ -30,21 +40,32 @@ const isLoading = ref(true)
 const error = ref('')
 const successMessage = ref('')
 const isDeleteModalOpen = ref(false)
+const displayLimit = ref(7)
+
+const visibleTrips = computed(() => {
+  return authStore.tripHistory.slice(0, displayLimit.value)
+})
+
+const hasMoreTrips = computed(() => {
+  return authStore.tripHistory.length > displayLimit.value
+})
+
+const showMore = () => {
+  displayLimit.value += 10
+}
 
 const fetchVehicle = async () => {
   isLoading.value = true
   try {
-    if (authStore.user?.vehicle) {
-      populateForm(authStore.user.vehicle)
-    } else {
-      const vehicles = await vehiclesApi.getMyVehicles()
-      if (vehicles.length > 0) {
-        const v = vehicles[0]
-        if (v) {
-          populateForm(v)
-          if (authStore.user) {
-            authStore.user.vehicle = v
-          }
+    const vehicles = await vehiclesApi.getMyVehicles()
+    if (vehicles.length > 0) {
+      const v = vehicles[0]
+      if (v) {
+        populateForm(v)
+        if (authStore.user) {
+          authStore.user.vehicle = v
+          // Update localStorage
+          authStore.setUser({ ...authStore.user, vehicle: v })
         }
       }
     }
@@ -352,7 +373,103 @@ const deleteVehicle = async () => {
         </form>
       </section>
 
-      <div v-if="isEditing" class="grid grid-cols-1 md:grid-cols-2 gap-8"></div>
+      <!-- Stats / Insights Cards -->
+      <div v-if="isEditing" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Fuel Insights -->
+        <section class="bg-bg-canvas border border-border-default rounded-lg p-6 shadow-sm">
+          <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+            <Fuel class="w-5 h-5 text-brand-primary" /> Fuel Consumption
+          </h2>
+
+          <div class="space-y-4">
+            <div class="p-4 bg-bg-surface rounded border border-border-default">
+              <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-1">
+                Last Route Consumption
+              </p>
+              <div class="flex items-end gap-2">
+                <span class="text-2xl font-bold">{{ authStore.lastTripStats?.fuel || '--' }}</span>
+                <span class="text-text-secondary pb-1">liters</span>
+              </div>
+            </div>
+
+            <div
+              v-if="authStore.lastTripStats"
+              class="p-4 bg-brand-primary/5 rounded border border-brand-primary/10"
+            >
+              <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-1">
+                Distance Covered
+              </p>
+              <div class="flex items-end gap-2">
+                <span class="text-2xl font-bold text-brand-primary">{{
+                  authStore.lastTripStats.distance
+                }}</span>
+                <span class="text-brand-primary/70 pb-1 font-medium">km</span>
+              </div>
+            </div>
+
+            <p
+              v-if="!authStore.lastTripStats"
+              class="text-sm text-text-secondary italic text-center py-4"
+            >
+              Fuel statistics will be calculated automatically after your first completed route.
+            </p>
+          </div>
+        </section>
+      </div>
+      <!-- Maintenance & Alerts -->
+
+      <section
+        v-if="isEditing"
+        class="bg-bg-canvas border border-border-default rounded-lg p-6 shadow-sm"
+      >
+        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+          <Clock class="w-5 h-5 text-brand-primary" /> Recent Trips History
+        </h2>
+
+        <div v-if="authStore.tripHistory.length > 0" class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead>
+              <tr
+                class="text-[10px] font-black text-text-placeholder uppercase tracking-widest border-b border-border-default"
+              >
+                <th class="pb-3">Date</th>
+                <th class="pb-3">Route ID</th>
+                <th class="pb-3 text-right">Distance</th>
+                <th class="pb-3 text-right">Fuel Spent</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border-default">
+              <tr v-for="trip in visibleTrips" :key="trip.routeId + trip.date" class="text-sm">
+                <td class="py-4 text-text-secondary">
+                  {{ new Date(trip.date).toLocaleDateString('uk-UA') }}
+                  <span class="text-[10px] ml-1 opacity-50">{{
+                    new Date(trip.date).toLocaleTimeString('uk-UA', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
+                  }}</span>
+                </td>
+                <td class="py-4 font-bold">#{{ trip.routeId }}</td>
+                <td class="py-4 text-right font-medium">{{ trip.distance }} km</td>
+                <td class="py-4 text-right">
+                  <span class="bg-brand-primary/10 text-brand-primary px-2 py-1 rounded font-bold">
+                    {{ trip.fuel }} L
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div v-if="hasMoreTrips" class="mt-6 text-center">
+            <BaseButton variant="secondary" size="sm" @click="showMore" class="px-8">
+              Show More History
+            </BaseButton>
+          </div>
+        </div>
+        <div v-else class="text-center py-10 text-text-secondary italic">
+          No trip history recorded yet. Complete your first route to see stats here.
+        </div>
+      </section>
     </div>
 
     <BaseModal
