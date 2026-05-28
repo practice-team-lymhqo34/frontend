@@ -18,8 +18,10 @@ import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseImageUpload from '@/components/ui/BaseImageUpload.vue'
 import { getErrorMessage } from '@/utils/errorHandler'
+import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
+const router = useRouter()
 const routes = ref<Route[]>([])
 const routeStatuses = ref<Record<number, string>>({})
 const isLoading = ref(true)
@@ -54,7 +56,11 @@ const openDetails = (route: Route) => {
   isDetailsModalOpen.value = true
 }
 
-const vehicle = authStore.user?.vehicle
+const vehicle = computed(() => authStore.user?.vehicle)
+
+const goToVehicle = () => {
+  router.push('/driver/vehicle')
+}
 
 const currentStopId = computed(() => {
   const activeRoute = routes.value.find(
@@ -194,10 +200,13 @@ const extractDetails = (description: string | null | undefined) => {
       <div class="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
         <div
           v-if="vehicle"
-          class="bg-white px-5 py-3 rounded-lg border border-border-default shadow-sm flex items-center gap-4 flex-1 md:flex-initial"
+          @click="goToVehicle"
+          class="bg-white px-5 py-3 rounded-lg border border-border-default shadow-sm flex items-center gap-4 flex-1 md:flex-initial cursor-pointer hover:border-brand-primary transition-colors group"
         >
-          <div class="w-10 h-10 bg-brand-primary/10 rounded-full flex items-center justify-center">
-            <Truck class="w-5 h-5 text-brand-primary" />
+          <div
+            class="w-10 h-10 bg-brand-primary/10 rounded-full flex items-center justify-center group-hover:bg-brand-primary group-hover:text-white transition-colors"
+          >
+            <Truck class="w-5 h-5 text-brand-primary group-hover:text-white" />
           </div>
           <div>
             <p
@@ -218,7 +227,7 @@ const extractDetails = (description: string | null | undefined) => {
           class="bg-orange-50 px-5 py-3 rounded-lg border border-orange-200 flex items-center gap-4 flex-1 md:flex-initial"
         >
           <AlertCircle class="w-5 h-5 text-orange-500" />
-          <div>
+          <div class="flex-1">
             <p
               class="text-[10px] font-black text-orange-400 uppercase tracking-tighter leading-none mb-1"
             >
@@ -226,6 +235,7 @@ const extractDetails = (description: string | null | undefined) => {
             </p>
             <p class="text-sm font-bold text-orange-700 leading-none">No vehicle assigned</p>
           </div>
+          <BaseButton variant="secondary" size="sm" @click="goToVehicle">Add Vehicle</BaseButton>
         </div>
 
         <div

@@ -111,6 +111,11 @@ const router = createRouter({
           component: TodaysRouteView,
         },
         {
+          path: 'vehicle',
+          name: 'driver-vehicle',
+          component: () => import('@/views/MyVehicleView.vue'),
+        },
+        {
           path: 'settings',
           name: 'driver-settings',
           component: () => import('../views/SettingsView.vue'),
