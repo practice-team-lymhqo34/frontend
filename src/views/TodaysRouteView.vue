@@ -28,11 +28,18 @@ const isLoading = ref(true)
 const isUpdating = ref<Record<number, boolean>>({})
 const error = ref('')
 const isPhotoModalOpen = ref(false)
+const isSummaryModalOpen = ref(false)
 const selectedRouteForPhoto = ref<number | null>(null)
+const tripSummary = ref({ distance: 0, fuel: 0 })
 
 const openPhotoUpload = (routeId: number) => {
   selectedRouteForPhoto.value = routeId
   isPhotoModalOpen.value = true
+}
+
+const showTripSummary = (distance: number, fuel: number) => {
+  tripSummary.value = { distance, fuel }
+  isSummaryModalOpen.value = true
 }
 
 const toast = ref<{ show: boolean; message: string; type: 'success' | 'error' }>({
@@ -108,6 +115,22 @@ const updateStatus = async (routeId: number, status: string) => {
     routeStatuses.value[routeId] = status
     routes.value = await routesApi.getTodayRoutes()
     showToast(`Status updated to ${status.replace('_', ' ')}`)
+
+    if (status.toLowerCase() === 'delivered') {
+      const currentVehicle = vehicle.value || authStore.user?.vehicle
+
+      if (currentVehicle) {
+        // Mocked distance for now (e.g., between 5 and 45 km)
+        const mockDistance = Math.floor(Math.random() * 40) + 5
+        const fuelConsumption = Number(currentVehicle.fuel_consumption) || 0
+        const fuelSpent = (mockDistance * fuelConsumption) / 100
+        const stats = { distance: mockDistance, fuel: Number(fuelSpent.toFixed(2)) }
+
+        showTripSummary(stats.distance, stats.fuel)
+        authStore.setLastTripStats(stats)
+        authStore.addTripToHistory({ ...stats, routeId })
+      }
+    }
   } catch (err: unknown) {
     console.error('Failed to update status:', err)
     showToast(getErrorMessage(err), 'error')
@@ -551,6 +574,44 @@ const extractDetails = (description: string | null | undefined) => {
         @uploaded="showToast('Photo uploaded successfully')"
         @close="isPhotoModalOpen = false"
       />
+    </BaseModal>
+
+    <BaseModal
+      :show="isSummaryModalOpen"
+      @cancel="isSummaryModalOpen = false"
+      title="Route Completed!"
+    >
+      <div class="py-4 text-center">
+        <div
+          class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6"
+        >
+          <CheckCircle2 class="w-10 h-10" />
+        </div>
+        <h3 class="text-xl font-bold mb-2">Great job!</h3>
+        <p class="text-text-secondary mb-8">Trip details have been calculated automatically.</p>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="bg-bg-surface p-4 rounded-xl border border-border-default">
+            <p class="text-[10px] font-black text-text-placeholder uppercase mb-1">
+              Estimated Distance
+            </p>
+            <p class="text-2xl font-bold text-text-primary">
+              {{ tripSummary.distance }} <span class="text-sm font-medium">km</span>
+            </p>
+          </div>
+          <div class="bg-brand-primary/5 p-4 rounded-xl border border-brand-primary/10">
+            <p class="text-[10px] font-black text-brand-primary uppercase mb-1">Fuel Consumed</p>
+            <p class="text-2xl font-bold text-brand-primary">
+              {{ tripSummary.fuel }} <span class="text-sm font-medium">liters</span>
+            </p>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <BaseButton variant="primary" @click="isSummaryModalOpen = false" class="w-full py-4">
+          DONE
+        </BaseButton>
+      </template>
     </BaseModal>
 
     <Transition
