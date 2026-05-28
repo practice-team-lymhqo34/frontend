@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import type { Vehicle } from '@/types/vehicle'
 
 interface User {
   id: number
@@ -7,13 +8,7 @@ interface User {
   full_name: string
   role: 'client' | 'manager' | 'driver'
   phone_number: string
-  vehicle?: {
-    id: number
-    brand: string
-    model: string
-    license_plate: string
-    max_weight: number
-  }
+  vehicle?: Vehicle
 }
 
 export const useAuthStore = defineStore('auth', () => {

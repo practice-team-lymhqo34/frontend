@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
-import { User, Mail, Phone, Shield } from 'lucide-vue-next'
+import { User, Mail, Phone, Shield, Truck, ChevronRight } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
 const user = authStore.user
+const router = useRouter()
+
+const goToVehicle = () => {
+  router.push('/driver/vehicle')
+}
 </script>
 
 <template>
@@ -15,12 +21,21 @@ const user = authStore.user
       <div class="md:col-span-1">
         <nav class="flex flex-col gap-2">
           <button
-            class="flex items-center gap-3 px-4 py-3 bg-brand-primary/10 text-brand-primary rounded font-bold transition-colors"
+            class="flex items-center gap-3 px-4 py-3 bg-brand-primary/10 text-brand-primary rounded font-bold transition-colors text-left"
           >
             <User class="w-5 h-5" /> Profile
           </button>
+
           <button
-            class="flex items-center gap-3 px-4 py-3 text-text-secondary hover:bg-bg-surface rounded font-medium transition-colors"
+            v-if="authStore.isDriver"
+            @click="goToVehicle"
+            class="flex items-center gap-3 px-4 py-3 text-text-secondary hover:bg-bg-surface rounded font-medium transition-colors text-left"
+          >
+            <Truck class="w-5 h-5" /> My Vehicle
+          </button>
+
+          <button
+            class="flex items-center gap-3 px-4 py-3 text-text-secondary hover:bg-bg-surface rounded font-medium transition-colors text-left"
           >
             <Shield class="w-5 h-5" /> Security
           </button>
@@ -32,16 +47,49 @@ const user = authStore.user
           <h2 class="text-xl font-bold mb-6">Profile Information</h2>
 
           <div v-if="user" class="space-y-6">
-            <div class="flex items-center gap-4 p-4 bg-bg-surface rounded-lg">
-              <div
-                class="w-16 h-16 bg-brand-primary text-white flex items-center justify-center rounded-full text-2xl font-bold"
-              >
-                {{ user.full_name.charAt(0) }}
+            <div class="flex items-center justify-between p-4 bg-bg-surface rounded-lg">
+              <div class="flex items-center gap-4">
+                <div
+                  class="w-16 h-16 bg-brand-primary text-white flex items-center justify-center rounded-full text-2xl font-bold"
+                >
+                  {{ user.full_name.charAt(0) }}
+                </div>
+                <div>
+                  <h3 class="font-bold text-lg">{{ user.full_name }}</h3>
+                  <p class="text-text-secondary text-sm capitalize">{{ user.role }}</p>
+                </div>
               </div>
-              <div>
-                <h3 class="font-bold text-lg">{{ user.full_name }}</h3>
-                <p class="text-text-secondary text-sm capitalize">{{ user.role }}</p>
+
+              <div v-if="authStore.isDriver" class="hidden sm:block">
+                <div v-if="user.vehicle" class="text-right">
+                  <p class="text-[10px] text-text-placeholder font-bold uppercase">
+                    Vehicle Linked
+                  </p>
+                  <p class="text-sm font-bold text-brand-primary">
+                    {{ user.vehicle.brand }} {{ user.vehicle.model }}
+                  </p>
+                </div>
+                <BaseButton v-else variant="secondary" size="sm" @click="goToVehicle">
+                  Link Vehicle
+                </BaseButton>
               </div>
+            </div>
+
+            <div
+              v-if="authStore.isDriver && user.vehicle"
+              @click="goToVehicle"
+              class="p-4 border border-brand-primary/20 bg-brand-primary/5 rounded-lg flex items-center justify-between cursor-pointer hover:bg-brand-primary/10 transition-colors"
+            >
+              <div class="flex items-center gap-3">
+                <Truck class="w-5 h-5 text-brand-primary" />
+                <div>
+                  <p class="text-sm font-bold text-text-primary">My vehicle</p>
+                  <p class="text-xs text-text-secondary">
+                    {{ user.vehicle.license_plate }} • {{ user.vehicle.fuel_consumption }} l/100km
+                  </p>
+                </div>
+              </div>
+              <ChevronRight class="w-4 h-4 text-brand-primary" />
             </div>
 
             <div class="grid grid-cols-1 gap-6">

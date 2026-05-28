@@ -36,6 +36,7 @@ const iconMap: Record<string, unknown> = {
   Truck,
   FileText,
   PackageCheck,
+  Settings,
 }
 
 defineProps<{
@@ -66,28 +67,33 @@ const handleLogout = async () => {
 
 <template>
   <aside
-    class="fixed lg:sticky top-0 h-screen flex-shrink-0 flex flex-col py-6 bg-bg-sidebar text-text-on-dark transition-all duration-300 overflow-hidden lg:shadow-none"
+    class="fixed lg:sticky top-0 h-screen flex-shrink-0 flex flex-col py-6 bg-bg-sidebar text-text-on-dark transition-all duration-300 z-50 shadow-none"
     :class="[
       isOpen
-        ? 'w-[230px] px-5 shadow-2xl opacity-100'
-        : 'w-0 lg:w-16 px-0 lg:px-3 opacity-0 lg:opacity-100 pointer-events-none lg:pointer-events-auto',
+        ? 'w-[230px] px-5 opacity-100'
+        : 'w-0 lg:w-20 px-0 lg:px-4 opacity-0 lg:opacity-100 overflow-hidden',
     ]"
   >
-    <div class="flex items-center justify-between mb-8" :class="!isOpen && 'lg:flex-col lg:gap-4'">
-      <IconLogo v-if="isOpen" class="w-28 h-auto" />
-      <div v-else class="w-8 h-8 mx-auto lg:block hidden">
-        <IconLogo class="w-full h-full object-contain" />
-      </div>
+    <div class="flex items-center justify-between mb-8 min-h-[32px]">
+      <Transition
+        enter-active-class="transition-opacity duration-200"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="transition-opacity duration-200"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
+      >
+        <IconLogo v-if="isOpen" class="w-28 h-auto flex-shrink-0" />
+      </Transition>
 
       <button
-        class="flex items-center justify-center w-8 h-8 rounded text-text-sidebar-muted hover:text-white hover:bg-[#083672] transition-colors"
+        class="flex items-center justify-center w-8 h-8 rounded text-text-sidebar-muted hover:text-white hover:bg-[#083672] transition-colors flex-shrink-0 ml-auto"
         @click="$emit('toggle')"
       >
         <PanelLeftClose v-if="isOpen" class="w-4 h-4" />
-        <PanelLeftOpen v-else class="w-4 h-4 lg:block hidden" />
+        <PanelLeftOpen v-else class="w-4 h-4" />
       </button>
     </div>
-
     <div
       class="flex mb-5 overflow-hidden"
       :class="isOpen ? 'items-center gap-7' : 'lg:justify-center lg:mb-8'"
