@@ -3,11 +3,10 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import IconLogo from '@/components/icons/IconLogo.vue'
 import apiClient from '@/api/axios'
 import { useAuthStore } from '@/stores/auth'
+import { useNotificationStore } from '@/stores/notifications'
 import {
   Settings,
-  Bell,
   User,
-  Search,
   LogOut,
   LayoutDashboard,
   Package,
@@ -20,6 +19,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from 'lucide-vue-next'
+import { onMounted, computed } from 'vue'
 
 export interface SidebarLink {
   name: string
@@ -44,7 +44,7 @@ defineProps<{
   isOpen: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   close: []
   toggle: []
 }>()
@@ -52,6 +52,26 @@ defineEmits<{
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const notificationStore = useNotificationStore()
+
+const settingsPath = computed(() => {
+  if (authStore.isDriver) return '/driver/settings'
+  if (authStore.isClient) return '/recipient/settings'
+  return '/settings'
+})
+
+const handleNavClick = () => {
+  // Закриваємо сайдбар при кліку на мобільних пристроях (якщо він відкритий)
+  if (window.innerWidth < 1024) {
+    emit('close')
+  }
+}
+
+onMounted(() => {
+  if (authStore.isAuthenticated) {
+    notificationStore.fetchNotifications()
+  }
+})
 
 const handleLogout = async () => {
   try {
@@ -94,32 +114,16 @@ const handleLogout = async () => {
         <PanelLeftOpen v-else class="w-4 h-4" />
       </button>
     </div>
-    <div
-      class="flex mb-5 overflow-hidden"
-      :class="isOpen ? 'items-center gap-7' : 'lg:justify-center lg:mb-8'"
-    >
-      <div
-        class="w-8 h-8 rounded-full bg-brand-light flex items-center justify-center flex-shrink-0"
-      >
-        <User class="w-4 h-4 text-white" />
-      </div>
-      <template v-if="isOpen">
-        <button class="text-text-sidebar-muted hover:text-white transition-colors">
-          <Settings class="w-4 h-4" />
-        </button>
-        <button class="text-text-sidebar-muted hover:text-white transition-colors">
-          <Bell class="w-4 h-4" />
-        </button>
-      </template>
-    </div>
 
-    <div v-if="isOpen" class="flex items-center gap-2 bg-[#083672] rounded px-3 py-2 mb-5">
-      <Search class="w-4 h-4 text-text-sidebar-muted flex-shrink-0" />
-      <input
-        type="text"
-        placeholder="Search"
-        class="bg-transparent text-sm text-text-on-dark placeholder-text-sidebar-muted outline-none w-full"
-      />
+    <div class="flex mb-8 overflow-hidden justify-center items-center">
+      <router-link
+        :to="settingsPath"
+        @click.stop="handleNavClick"
+        class="w-10 h-10 rounded-full bg-brand-light flex items-center justify-center flex-shrink-0 hover:bg-brand-primary transition-all border-2 border-transparent hover:border-white/20 shadow-sm"
+        title="My Profile"
+      >
+        <User class="w-5 h-5 text-white" />
+      </router-link>
     </div>
 
     <nav class="flex flex-col gap-0.5 flex-1">
@@ -127,6 +131,7 @@ const handleLogout = async () => {
         v-for="link in links"
         :key="link.path"
         :to="link.path"
+        @click="handleNavClick"
         class="flex items-center gap-3 py-2 rounded text-sm text-text-sidebar-muted hover:text-white transition-colors"
         :class="[
           route.path === link.path ? 'bg-[#083672] text-white' : 'hover:bg-[#083672]',
@@ -134,7 +139,13 @@ const handleLogout = async () => {
         ]"
         :title="!isOpen ? link.name : undefined"
       >
-        <component :is="iconMap[link.icon]" class="w-4 h-4 flex-shrink-0" />
+        <div class="relative flex items-center justify-center">
+          <component :is="iconMap[link.icon]" class="w-4 h-4 flex-shrink-0" />
+          <div
+            v-if="link.path === '/driver/vehicle' && notificationStore.hasUnreadMaintenance"
+            class="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border border-bg-sidebar"
+          ></div>
+        </div>
         <span v-if="isOpen" class="whitespace-nowrap overflow-hidden">{{ link.name }}</span>
       </RouterLink>
     </nav>

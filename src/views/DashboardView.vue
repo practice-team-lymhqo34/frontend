@@ -1,29 +1,28 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useNotificationStore } from '@/stores/notifications'
 import { ordersApi } from '@/api/orders'
-import { notificationsApi, type Notification } from '@/api/notifications'
 import type { Order } from '@/types/order'
 import StatCard from '@/components/dashboard/StatCard.vue'
 import LatestUpdates from '@/components/dashboard/LatestUpdates.vue'
 import UsersByCity from '@/components/dashboard/UsersByCity.vue'
 import ActiveDeliveries from '@/components/dashboard/ActiveDeliveries.vue'
-import { Loader2 } from 'lucide-vue-next'
+import { Loader2, Truck, AlertCircle } from 'lucide-vue-next'
 
 const authStore = useAuthStore()
+const notificationStore = useNotificationStore()
 const isLoading = ref(true)
 const orders = ref<Order[]>([])
-const notifications = ref<Notification[]>([])
 
 const fetchData = async () => {
   isLoading.value = true
   try {
-    const [ordersRes, notificationsRes] = await Promise.all([
+    const [ordersRes] = await Promise.all([
       ordersApi.getOrders(),
-      notificationsApi.getNotifications(),
+      notificationStore.fetchNotifications(),
     ])
     orders.value = ordersRes
-    notifications.value = notificationsRes
   } catch (error) {
     console.error('Failed to fetch dashboard data:', error)
   } finally {
@@ -47,6 +46,28 @@ const managerStats = computed(() => {
   ]
 })
 
+const driverStats = computed(() => {
+  const currentRoute = orders.value.filter((o) => o.status === 'in_progress').length
+  return [
+    {
+      title: 'Current Shipments',
+      value: currentRoute.toString(),
+      trend: 0,
+    },
+    {
+      title: 'Maintenance Alerts',
+      value: notificationStore.maintenanceAlerts.length.toString(),
+      trend: 0,
+      color: notificationStore.hasUnreadMaintenance ? 'text-red-500 font-bold' : '',
+    },
+    {
+      title: 'New Notifications',
+      value: notificationStore.unreadNotifications.length.toString(),
+      trend: 0,
+    },
+  ]
+})
+
 const clientStats = computed(() => {
   const active = orders.value.filter(
     (o) => o.status === 'in_progress' || o.status === 'pending',
@@ -58,7 +79,7 @@ const clientStats = computed(() => {
     { title: 'Total Received', value: received.toString(), trend: 0 },
     {
       title: 'Notifications',
-      value: notifications.value.filter((n) => !n.is_read).length.toString(),
+      value: notificationStore.unreadNotifications.length.toString(),
       trend: 0,
     },
     {
@@ -81,7 +102,7 @@ const activeDeliveries = computed(() =>
 )
 
 const latestUpdates = computed(() =>
-  notifications.value.slice(0, 5).map((n) => ({
+  notificationStore.notifications.slice(0, 5).map((n) => ({
     time: new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     text: n.message,
   })),
@@ -99,12 +120,6 @@ const cities = [
   <div class="p-8 bg-bg-surface min-h-screen">
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-3xl font-bold text-text-primary">Dashboard</h1>
-      <div v-if="!isLoading" class="text-sm text-text-placeholder">
-        Welcome back,
-        <span class="text-text-primary font-medium">{{ authStore.user?.full_name }}</span> ({{
-          authStore.userRole
-        }})
-      </div>
     </div>
 
     <div v-if="isLoading" class="flex flex-col items-center justify-center py-20">
@@ -113,7 +128,6 @@ const cities = [
     </div>
 
     <template v-else>
-      <!-- Manager View -->
       <template v-if="authStore.isManager">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <StatCard v-for="stat in managerStats" :key="stat.title" v-bind="stat" />
@@ -152,7 +166,6 @@ const cities = [
         </div>
       </template>
 
-      <!-- Client (Recipient) View -->
       <template v-else-if="authStore.isClient">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <StatCard v-for="stat in clientStats" :key="stat.title" v-bind="stat" />
@@ -203,22 +216,70 @@ const cities = [
           </div>
         </div>
       </template>
-      <!-- Fallback/Driver View -->
+
+      <template v-else-if="authStore.isDriver">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          <StatCard v-for="stat in driverStats" :key="stat.title" v-bind="stat" />
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <div class="lg:col-span-2 space-y-6">
+            <div
+              v-if="notificationStore.hasUnreadMaintenance"
+              class="bg-red-50 border border-red-200 rounded-lg p-6"
+            >
+              <div class="flex items-start gap-4">
+                <div class="p-3 bg-red-100 rounded-full text-red-600">
+                  <AlertCircle class="w-6 h-6" />
+                </div>
+                <div class="flex-1">
+                  <h3 class="text-lg font-bold text-red-900 mb-1">Maintenance Required</h3>
+                  <p class="text-red-700 text-sm mb-4">
+                    Your vehicle has reached its mileage limit for maintenance. Please check the
+                    maintenance section for details.
+                  </p>
+                  <router-link
+                    to="/driver/vehicle"
+                    class="inline-flex items-center text-sm font-bold text-red-600 hover:text-red-800 transition-colors uppercase tracking-wider"
+                  >
+                    Manage Vehicle →
+                  </router-link>
+                </div>
+              </div>
+            </div>
+
+            <ActiveDeliveries v-if="activeDeliveries.length > 0" :deliveries="activeDeliveries" />
+            <div
+              v-else
+              class="bg-bg-canvas border border-border-default rounded-lg p-10 text-center"
+            >
+              <Truck class="w-12 h-12 text-text-placeholder mx-auto mb-4" />
+              <h3 class="text-lg font-bold text-text-primary mb-2">No active route</h3>
+              <p class="text-text-secondary mb-6">
+                You don't have any assigned orders at the moment.
+              </p>
+              <router-link
+                to="/driver/route"
+                class="px-8 py-3 bg-primary text-white rounded-md font-bold hover:bg-primary/90 transition-colors"
+              >
+                Go to My Route
+              </router-link>
+            </div>
+          </div>
+          <div class="space-y-6">
+            <LatestUpdates :updates="latestUpdates" title="Recent Notifications" />
+          </div>
+        </div>
+      </template>
+
       <template v-else>
         <div
           class="flex flex-col items-center justify-center py-20 bg-bg-canvas border border-border-default rounded-lg text-center"
         >
-          <h2 class="text-xl font-bold text-text-primary mb-2">Driver Access</h2>
+          <h2 class="text-xl font-bold text-text-primary mb-2">Welcome to LogiFlow</h2>
           <p class="text-text-placeholder mb-6 max-w-md mx-auto">
-            Welcome to the driver portal. Your tasks and routes are managed in the dedicated
-            section.
+            Please contact your administrator to assign a role and access the platform features.
           </p>
-          <router-link
-            to="/driver/route"
-            class="px-8 py-3 bg-primary text-white rounded-md font-bold hover:bg-primary/90 transition-colors"
-          >
-            View My Route
-          </router-link>
         </div>
       </template>
     </template>

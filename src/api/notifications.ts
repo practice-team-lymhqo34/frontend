@@ -1,24 +1,18 @@
 import apiClient from './axios'
-
-export interface Notification {
-  id: number
-  title: string
-  message: string
-  is_read: boolean
-  created_at: string
-}
+import type { Notification } from '@/types/notification'
 
 export const notificationsApi = {
-  async getNotifications(): Promise<Notification[]> {
+  getNotifications: async (): Promise<Notification[]> => {
     const response = await apiClient.get<Notification[]>('/dashboard/notifications')
     return response.data
   },
 
-  async markAsRead(id: number): Promise<void> {
-    await apiClient.patch(`/dashboard/notifications/${id}`, { is_read: true })
+  markAsRead: async (id: number): Promise<Notification> => {
+    const response = await apiClient.patch<Notification>(`/dashboard/notifications/${id}`)
+    return response.data
   },
 
-  async markAllAsRead(): Promise<void> {
+  markAllAsRead: async (): Promise<void> => {
     await apiClient.patch('/dashboard/notifications/read-all')
   },
 }
