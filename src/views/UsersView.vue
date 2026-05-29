@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Search, Filter, MoreVertical, UserPlus } from 'lucide-vue-next'
+import { Search, MoreVertical, UserPlus } from 'lucide-vue-next'
 
 const users = ref([
   { id: 1, name: 'Admin User', email: 'admin@logiflow.com', role: 'manager', status: 'Active' },
@@ -46,11 +46,6 @@ const getRoleClasses = (role: string) => {
             class="w-full pl-10 pr-4 py-2 bg-bg-surface border border-border-default rounded outline-none focus:border-brand-primary transition-colors"
           />
         </div>
-        <button
-          class="flex items-center gap-2 px-4 py-2 border border-border-default rounded hover:bg-bg-surface transition-colors"
-        >
-          <Filter class="w-4 h-4" /> Filter
-        </button>
       </div>
 
       <table class="w-full text-left border-collapse">

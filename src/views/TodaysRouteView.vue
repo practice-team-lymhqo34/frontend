@@ -260,15 +260,6 @@ const extractDetails = (description: string | null | undefined) => {
           </div>
           <BaseButton variant="secondary" size="sm" @click="goToVehicle">Add Vehicle</BaseButton>
         </div>
-
-        <div
-          class="flex items-center gap-3 bg-white px-5 py-3 rounded-lg border border-border-default shadow-sm h-fit self-end hidden sm:flex"
-        >
-          <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-          <span class="text-[10px] font-black uppercase tracking-wider text-text-secondary"
-            >System Online</span
-          >
-        </div>
       </div>
     </div>
 

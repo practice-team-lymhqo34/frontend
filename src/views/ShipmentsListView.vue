@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import apiClient from '@/api/axios'
 import type { Order } from '@/types'
-import { Package, Search, Filter, Loader2 } from 'lucide-vue-next'
+import { Package, Search, Loader2 } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import { getErrorMessage } from '@/utils/errorHandler'
 
@@ -92,11 +92,6 @@ onMounted(fetchOrders)
             class="w-full pl-10 pr-4 py-2 bg-white border border-border-default rounded-lg outline-none focus:border-brand-primary transition-colors"
           />
         </div>
-        <button
-          class="flex items-center gap-2 px-4 py-2 bg-white border border-border-default rounded-lg hover:bg-bg-surface transition-colors font-bold text-sm"
-        >
-          <Filter class="w-4 h-4" /> Filters
-        </button>
       </div>
 
       <table class="w-full text-left border-collapse">

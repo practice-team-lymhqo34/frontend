@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import apiClient from '@/api/axios'
 import { ordersApi } from '@/api/orders'
 import type { Order, Route } from '@/types'
-import { Package, Search, Filter, Plus, ChevronRight } from 'lucide-vue-next'
+import { Package, Search, Plus, ChevronRight } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import { getErrorMessage } from '@/utils/errorHandler'
@@ -183,11 +183,6 @@ onMounted(fetchOrders)
             class="w-full pl-10 pr-4 py-2 bg-bg-surface border border-border-default rounded outline-none focus:border-brand-primary transition-colors text-sm"
           />
         </div>
-        <button
-          class="flex items-center justify-center gap-2 px-4 py-2 border border-border-default rounded hover:bg-bg-surface transition-colors text-sm"
-        >
-          <Filter class="w-4 h-4" /> Filter
-        </button>
       </div>
 
       <div class="overflow-x-auto">

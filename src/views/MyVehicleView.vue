@@ -197,7 +197,7 @@ const deleteVehicle = async () => {
 
     <div v-else class="grid grid-cols-1 gap-8">
       <VehicleSpecsForm
-        :vehicle-form="vehicleForm"
+        v-model:vehicle-form="vehicleForm"
         :is-editing="isEditing"
         :is-saving="isSaving"
         :is-deleting="isDeleting"
