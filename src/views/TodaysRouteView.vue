@@ -17,6 +17,7 @@ import {
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseImageUpload from '@/components/ui/BaseImageUpload.vue'
+import BaseEmptyState from '@/components/ui/BaseEmptyState.vue'
 import { getErrorMessage } from '@/utils/errorHandler'
 import { useRouter } from 'vue-router'
 
@@ -285,14 +286,12 @@ const extractDetails = (description: string | null | undefined) => {
       <p class="text-text-secondary font-bold tracking-widest">LOADING ROUTES...</p>
     </div>
 
-    <div
+    <BaseEmptyState
       v-else-if="routes.length === 0"
-      class="bg-white border border-dashed border-border-default rounded-lg p-20 text-center shadow-sm"
-    >
-      <Truck class="w-16 h-16 text-text-placeholder mx-auto mb-4 opacity-20" />
-      <h3 class="text-xl font-bold text-text-primary">No routes assigned yet</h3>
-      <p class="text-text-secondary mt-2">Check back later or contact your manager.</p>
-    </div>
+      :icon="Truck"
+      title="No routes assigned yet"
+      description="Check back later or contact your manager."
+    />
 
     <div v-else class="space-y-6">
       <div

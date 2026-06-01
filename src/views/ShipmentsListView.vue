@@ -5,6 +5,7 @@ import type { Order } from '@/types'
 import { Package, Search, Loader2 } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import { getErrorMessage } from '@/utils/errorHandler'
+import BaseEmptyState from '@/components/ui/BaseEmptyState.vue'
 
 const router = useRouter()
 const orders = ref<Order[]>([])
@@ -73,14 +74,12 @@ onMounted(fetchOrders)
       </button>
     </div>
 
-    <div
+    <BaseEmptyState
       v-else-if="orders.length === 0"
-      class="bg-white border-2 border-dashed border-border-default rounded-xl p-20 text-center"
-    >
-      <Package class="w-16 h-16 text-text-placeholder mx-auto mb-4" />
-      <h3 class="text-xl font-bold mb-2">No shipments found</h3>
-      <p class="text-text-secondary">There are currently no orders to display.</p>
-    </div>
+      :icon="Package"
+      title="No shipments found"
+      description="There are currently no orders to display."
+    />
 
     <div v-else class="bg-white border border-border-default rounded-xl overflow-hidden shadow-sm">
       <div class="p-4 border-b border-border-default flex gap-4 bg-bg-surface/50">

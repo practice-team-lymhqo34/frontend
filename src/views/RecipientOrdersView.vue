@@ -6,6 +6,7 @@ import type { Order, Route } from '@/types'
 import { Package, Search, Plus, ChevronRight } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import BaseEmptyState from '@/components/ui/BaseEmptyState.vue'
 import { getErrorMessage } from '@/utils/errorHandler'
 
 const router = useRouter()
@@ -158,20 +159,21 @@ onMounted(fetchOrders)
       <button @click="fetchOrders" class="ml-4 underline font-bold">Retry</button>
     </div>
 
-    <div
+    <BaseEmptyState
       v-else-if="orders.length === 0"
-      class="bg-bg-canvas border border-border-default rounded-lg p-10 md:p-20 text-center"
+      :icon="Package"
+      title="No orders found"
+      description="You haven't created any delivery requests yet."
     >
-      <Package class="w-16 h-16 text-text-placeholder mx-auto mb-4" />
-      <h3 class="text-xl font-bold mb-2">No orders found</h3>
-      <p class="text-text-secondary mb-6">You haven't created any delivery requests yet.</p>
-      <button
-        @click="router.push('/recipient/delivery/new')"
-        class="text-brand-primary font-bold hover:underline"
-      >
-        Create your first delivery
-      </button>
-    </div>
+      <template #action>
+        <button
+          @click="router.push('/recipient/delivery/new')"
+          class="text-brand-primary font-bold hover:underline"
+        >
+          Create your first delivery
+        </button>
+      </template>
+    </BaseEmptyState>
 
     <div v-else class="bg-bg-canvas border border-border-default rounded-lg overflow-hidden">
       <div class="p-4 border-b border-border-default flex flex-col sm:flex-row gap-4">
