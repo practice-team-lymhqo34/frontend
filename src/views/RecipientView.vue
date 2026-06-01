@@ -1,22 +1,50 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { invoicesApi } from '@/api/invoices'
+import { ordersApi } from '@/api/orders'
 import type { Invoice } from '@/types/invoice'
+import type { Order } from '@/types/order'
 import { Loader2, AlertCircle } from 'lucide-vue-next'
 import { getErrorMessage } from '@/utils/errorHandler'
 import MonthlyExpensesChart from '@/components/dashboard/MonthlyExpensesChart.vue'
 
 const invoices = ref<Invoice[]>([])
+const orders = ref<Order[]>([])
 const isLoading = ref(true)
 const error = ref<string | null>(null)
+const selectedMonth = ref(new Date().toISOString().slice(0, 7)) // YYYY-MM
+const TARIFF_PER_KG = 45 // Virtual tariff matching chart
 
-const fetchInvoices = async () => {
+const availableMonths = computed(() => {
+  const months = new Set<string>()
+  // Always include current month
+  months.add(new Date().toISOString().slice(0, 7))
+
+  invoices.value.forEach((inv) => {
+    months.add(new Date(inv.billing_month).toISOString().slice(0, 7))
+  })
+
+  return Array.from(months).sort().reverse()
+})
+
+const filteredInvoices = computed(() => {
+  return invoices.value.filter((inv) =>
+    new Date(inv.billing_month).toISOString().startsWith(selectedMonth.value),
+  )
+})
+
+const fetchData = async () => {
   isLoading.value = true
   error.value = null
   try {
-    invoices.value = await invoicesApi.getInvoices()
+    const [invoicesRes, ordersRes] = await Promise.all([
+      invoicesApi.getInvoices(),
+      ordersApi.getOrders(),
+    ])
+    invoices.value = invoicesRes
+    orders.value = ordersRes
   } catch (err) {
-    console.error('Failed to fetch invoices:', err)
+    console.error('Failed to fetch data:', err)
     error.value = getErrorMessage(err)
   } finally {
     isLoading.value = false
@@ -24,7 +52,7 @@ const fetchInvoices = async () => {
 }
 
 onMounted(() => {
-  fetchInvoices()
+  fetchData()
 })
 
 const formatDate = (dateString: string) => {
@@ -50,6 +78,20 @@ const formatMonth = (dateString: string) => {
         <h1 class="text-2xl md:text-[32px] font-bold">Billings & Reports</h1>
         <p class="text-text-secondary">Control your budget and view logistics reports</p>
       </div>
+      <div class="flex items-center gap-3 bg-bg-canvas p-2 rounded-lg border border-border-default">
+        <label for="month-filter" class="text-sm font-medium text-text-secondary pl-2"
+          >Period:</label
+        >
+        <select
+          id="month-filter"
+          v-model="selectedMonth"
+          class="bg-transparent border-none text-sm font-bold focus:ring-0 cursor-pointer"
+        >
+          <option v-for="month in availableMonths" :key="month" :value="month">
+            {{ new Date(month).toLocaleDateString('uk-UA', { month: 'long', year: 'numeric' }) }}
+          </option>
+        </select>
+      </div>
     </div>
 
     <div
@@ -69,17 +111,32 @@ const formatMonth = (dateString: string) => {
         <div class="space-y-4">
           <div class="flex justify-between items-center pb-4 border-b border-border-default">
             <span class="text-text-secondary">Total Invoices</span>
-            <span class="font-bold">{{ invoices.length }}</span>
+            <span class="font-bold">{{ filteredInvoices.length }}</span>
           </div>
           <div class="flex justify-between items-center pb-4 border-b border-border-default">
-            <span class="text-text-secondary">Current Period</span>
-            <span class="font-bold text-brand-primary">{{
-              new Date().toLocaleDateString('uk-UA', { month: 'long', year: 'numeric' })
-            }}</span>
+            <span class="text-text-secondary">Total Weight</span>
+            <span class="font-bold"
+              >{{
+                filteredInvoices.reduce((acc, inv) => acc + inv.total_weight, 0).toLocaleString()
+              }}
+              kg</span
+            >
+          </div>
+          <div class="flex justify-between items-center pb-4 border-b border-border-default">
+            <span class="text-text-secondary">Estimated Cost</span>
+            <span class="font-bold text-brand-primary"
+              >₴{{
+                (
+                  filteredInvoices.reduce((acc, inv) => acc + inv.total_weight, 0) * TARIFF_PER_KG
+                ).toLocaleString()
+              }}</span
+            >
           </div>
           <div class="pt-2">
-            <p class="text-xs text-text-placeholder">
-              Expenses are calculated based on completed deliveries for the selected period.
+            <p
+              class="text-[10px] text-text-placeholder mt-3 text-center uppercase tracking-wider font-bold"
+            >
+              * Billing is calculated at a fixed rate of ₴{{ TARIFF_PER_KG }}/kg
             </p>
           </div>
         </div>
@@ -90,7 +147,7 @@ const formatMonth = (dateString: string) => {
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold">Invoice History</h2>
         <button
-          @click="fetchInvoices"
+          @click="fetchData"
           class="text-sm text-brand-primary hover:underline flex items-center gap-1"
           :disabled="isLoading"
         >
@@ -108,10 +165,18 @@ const formatMonth = (dateString: string) => {
       </div>
 
       <div
-        v-else-if="invoices.length === 0"
-        class="flex flex-col items-center justify-center py-20 bg-bg-canvas rounded-xl border border-border-default"
+        v-else-if="filteredInvoices.length === 0"
+        class="flex flex-col items-center justify-center py-20 bg-bg-canvas rounded-xl border border-border-default text-center"
       >
-        <p class="text-text-secondary font-medium">No invoices found for your account.</p>
+        <div
+          class="w-16 h-16 bg-bg-surface rounded-full flex items-center justify-center mb-4 mx-auto"
+        >
+          <AlertCircle class="w-8 h-8 text-text-placeholder" />
+        </div>
+        <p class="text-text-primary font-bold mb-1">No invoices found for this period</p>
+        <p class="text-text-secondary text-sm">
+          Try selecting a different month or generate a new report.
+        </p>
       </div>
 
       <div v-else class="bg-bg-canvas border border-border-default rounded-lg overflow-hidden">
@@ -153,7 +218,7 @@ const formatMonth = (dateString: string) => {
             </thead>
             <tbody class="divide-y divide-border-default">
               <tr
-                v-for="invoice in invoices"
+                v-for="invoice in filteredInvoices"
                 :key="invoice.id"
                 class="hover:bg-bg-surface transition-colors cursor-pointer group"
               >

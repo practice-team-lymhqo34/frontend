@@ -9,38 +9,46 @@ import apiClient from '@/api/axios'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { getErrorMessage } from '@/utils/errorHandler'
+import { useToast } from '@/composables/useToast'
+import { AUTH } from '@/constants/ui'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const { showSuccess, showError } = useToast()
 
 const email = ref('')
 const password = ref('')
 const rememberMe = ref(false)
 const showPassword = ref(false)
-const errorMessage = ref('')
 const emailError = ref('')
 const passwordError = ref('')
 const isLoading = ref(false)
 
-const validateForm = () => {
-  let isValid = true
+const validateEmail = () => {
   emailError.value = ''
-  passwordError.value = ''
-
   if (!email.value) {
-    emailError.value = 'Email is required'
-    isValid = false
+    emailError.value = AUTH.errors.emailRequired
+    return false
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
-    emailError.value = 'Invalid email format'
-    isValid = false
+    emailError.value = AUTH.errors.emailInvalid
+    return false
   }
+  return true
+}
 
+const validatePassword = () => {
+  passwordError.value = ''
   if (!password.value) {
-    passwordError.value = 'Password is required'
-    isValid = false
+    passwordError.value = AUTH.errors.passwordRequired
+    return false
   }
+  return true
+}
 
-  return isValid
+const validateForm = () => {
+  const isEmailValid = validateEmail()
+  const isPasswordValid = validatePassword()
+  return isEmailValid && isPasswordValid
 }
 
 const redirectUser = async () => {
@@ -60,7 +68,6 @@ const redirectUser = async () => {
 const handleLogin = async () => {
   if (!validateForm()) return
 
-  errorMessage.value = ''
   isLoading.value = true
   console.log('Attempting login for:', email.value)
 
@@ -72,13 +79,15 @@ const handleLogin = async () => {
 
     console.log('Login successful, setting user in store')
     authStore.setUser(response.data)
+    showSuccess(AUTH.login.success)
 
     isLoading.value = false
 
     await redirectUser()
   } catch (error: unknown) {
     isLoading.value = false
-    errorMessage.value = getErrorMessage(error)
+    const msg = getErrorMessage(error)
+    showError(msg)
     console.error('Login error:', error)
   }
 }
@@ -90,24 +99,26 @@ const handleLogin = async () => {
 
     <div class="flex-1 flex flex-col justify-center px-6 sm:px-10">
       <div class="w-full max-w-[480px] mx-auto flex flex-col gap-8 sm:gap-10">
-        <h1 class="text-text-primary text-3xl sm:text-[42px] font-bold">Log in</h1>
+        <h1 class="text-text-primary text-3xl sm:text-[42px] font-bold">{{ AUTH.login.title }}</h1>
 
         <form class="flex flex-col gap-6" @submit.prevent="handleLogin">
           <BaseInput
             v-model="email"
-            label="Email Address"
-            placeholder="user@gmail.com"
+            :label="AUTH.login.emailLabel"
+            :placeholder="AUTH.login.emailPlaceholder"
             :error="emailError"
             @input="emailError = ''"
+            @blur="validateEmail"
           />
 
           <BaseInput
             v-model="password"
-            label="Password"
+            :label="AUTH.login.passwordLabel"
             :type="showPassword ? 'text' : 'password'"
-            placeholder="*******"
+            :placeholder="AUTH.login.passwordPlaceholder"
             :error="passwordError"
             @input="passwordError = ''"
+            @blur="validatePassword"
           >
             <template #suffix>
               <button type="button" @click="showPassword = !showPassword">
@@ -118,25 +129,24 @@ const handleLogin = async () => {
 
           <div class="flex items-center justify-between">
             <label class="flex items-center gap-2 cursor-pointer">
-              <BaseCheckbox v-model="rememberMe" label="Remember me" />
+              <BaseCheckbox v-model="rememberMe" :label="AUTH.login.rememberMe" />
             </label>
-            <a href="#" class="text-text-link text-sm hover:underline">Forgot Password?</a>
+            <a href="#" class="text-text-link text-sm hover:underline">{{
+              AUTH.login.forgotPassword
+            }}</a>
           </div>
 
           <BaseButton type="submit" variant="primary" :disabled="isLoading">
-            {{ isLoading ? 'Logging in...' : 'Log In' }}
+            {{ isLoading ? AUTH.login.submitBtnLoading : AUTH.login.submitBtn }}
           </BaseButton>
-          <div v-if="errorMessage" class="text-red-500 text-sm text-center font-medium">
-            {{ errorMessage }}
-          </div>
         </form>
 
         <div class="h-px bg-border-default w-full"></div>
         <p class="text-sm">
-          <span class="text-text-secondary">No account yet?</span>
-          <RouterLink to="/register" class="ml-1 text-text-link font-bold hover:underline"
-            >Sign Up</RouterLink
-          >
+          <span class="text-text-secondary">{{ AUTH.login.noAccount }}</span>
+          <RouterLink to="/register" class="ml-1 text-text-link font-bold hover:underline">{{
+            AUTH.login.signUp
+          }}</RouterLink>
         </p>
       </div>
     </div>

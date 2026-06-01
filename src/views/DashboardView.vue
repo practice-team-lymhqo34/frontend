@@ -8,6 +8,7 @@ import StatCard from '@/components/dashboard/StatCard.vue'
 import LatestUpdates from '@/components/dashboard/LatestUpdates.vue'
 import UsersByCity from '@/components/dashboard/UsersByCity.vue'
 import ActiveDeliveries from '@/components/dashboard/ActiveDeliveries.vue'
+import MonthlyExpensesChart from '@/components/dashboard/MonthlyExpensesChart.vue'
 import { Loader2, Truck, AlertCircle } from 'lucide-vue-next'
 
 const authStore = useAuthStore()
@@ -173,6 +174,7 @@ const cities = [
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div class="lg:col-span-2 space-y-6">
+            <MonthlyExpensesChart />
             <ActiveDeliveries v-if="activeDeliveries.length > 0" :deliveries="activeDeliveries" />
             <div
               v-else
