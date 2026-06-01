@@ -9,15 +9,16 @@ import apiClient from '@/api/axios'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { getErrorMessage } from '@/utils/errorHandler'
+import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const { showSuccess, showError } = useToast()
 
 const email = ref('')
 const password = ref('')
 const rememberMe = ref(false)
 const showPassword = ref(false)
-const errorMessage = ref('')
 const emailError = ref('')
 const passwordError = ref('')
 const isLoading = ref(false)
@@ -60,7 +61,6 @@ const redirectUser = async () => {
 const handleLogin = async () => {
   if (!validateForm()) return
 
-  errorMessage.value = ''
   isLoading.value = true
   console.log('Attempting login for:', email.value)
 
@@ -72,13 +72,15 @@ const handleLogin = async () => {
 
     console.log('Login successful, setting user in store')
     authStore.setUser(response.data)
+    showSuccess('Successfully logged in!')
 
     isLoading.value = false
 
     await redirectUser()
   } catch (error: unknown) {
     isLoading.value = false
-    errorMessage.value = getErrorMessage(error)
+    const msg = getErrorMessage(error)
+    showError(msg)
     console.error('Login error:', error)
   }
 }
@@ -126,9 +128,6 @@ const handleLogin = async () => {
           <BaseButton type="submit" variant="primary" :disabled="isLoading">
             {{ isLoading ? 'Logging in...' : 'Log In' }}
           </BaseButton>
-          <div v-if="errorMessage" class="text-red-500 text-sm text-center font-medium">
-            {{ errorMessage }}
-          </div>
         </form>
 
         <div class="h-px bg-border-default w-full"></div>

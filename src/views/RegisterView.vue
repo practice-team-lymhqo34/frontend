@@ -8,6 +8,9 @@ import AuthSidebar from '@/components/auth/AuthSidebar.vue'
 import apiClient from '@/api/axios.ts'
 import router from '@/router'
 import { getErrorMessage } from '@/utils/errorHandler'
+import { useToast } from '@/composables/useToast'
+
+const { showSuccess, showError } = useToast()
 
 const fullName = ref('')
 const email = ref('')
@@ -26,7 +29,6 @@ const confirmPasswordError = ref('')
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 
-const errorMessage = ref('')
 const isLoading = ref(false)
 
 const roleOptions = [
@@ -92,7 +94,6 @@ const validateForm = () => {
 const handleRegister = async () => {
   if (!validateForm()) return
 
-  errorMessage.value = ''
   isLoading.value = true
 
   try {
@@ -104,9 +105,11 @@ const handleRegister = async () => {
       role: role.value,
     })
 
+    showSuccess('Registration successful! You can now log in.')
     router.push('/login')
   } catch (error: unknown) {
-    errorMessage.value = getErrorMessage(error)
+    const msg = getErrorMessage(error)
+    showError(msg)
   } finally {
     isLoading.value = false
   }
@@ -189,9 +192,6 @@ const handleRegister = async () => {
           <BaseButton type="submit" variant="primary" :disabled="isLoading">
             {{ isLoading ? 'Creating Account...' : 'Create Account' }}
           </BaseButton>
-          <div v-if="errorMessage" class="text-red-500 text-sm font-medium text-center mb-4">
-            {{ errorMessage }}
-          </div>
         </form>
 
         <div class="h-px bg-border-default w-full"></div>

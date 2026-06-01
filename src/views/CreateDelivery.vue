@@ -9,6 +9,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseCheckbox from '@/components/ui/BaseCheckbox.vue'
 import { getErrorMessage } from '@/utils/errorHandler'
+import { useToast } from '@/composables/useToast'
 
 interface OrderForm {
   title: string
@@ -24,8 +25,8 @@ interface OrderForm {
 const STORAGE_KEY = 'order-form-draft'
 
 const router = useRouter()
+const { showSuccess, showError } = useToast()
 const isSubmitting = ref(false)
-const errorMessage = ref('')
 const templates = ref<Order[]>([])
 const showTemplates = ref(false)
 
@@ -163,12 +164,11 @@ const submitOrder = async () => {
   }
 
   if (hasError) {
-    errorMessage.value = 'Please fill all the required fields.'
+    showError('Please fill all the required fields.')
     return
   }
 
   isSubmitting.value = true
-  errorMessage.value = ''
 
   try {
     const enrichedDescription = `Quantity: ${form.quantity || 'N/A'}, Volume: ${form.volume || 'N/A'}. ${form.description || ''}`
@@ -181,11 +181,12 @@ const submitOrder = async () => {
       destination_address: form.destination_address,
       is_template: form.isTemplate,
     })
+    showSuccess('Delivery created successfully!')
     localStorage.removeItem(STORAGE_KEY)
     router.push('/recipient/orders')
   } catch (err: unknown) {
     console.error('Error creating order:', err)
-    errorMessage.value = getErrorMessage(err)
+    showError(getErrorMessage(err))
   } finally {
     isSubmitting.value = false
   }
@@ -232,13 +233,6 @@ const submitOrder = async () => {
     </div>
 
     <form @submit.prevent="submitOrder">
-      <div
-        v-if="errorMessage"
-        class="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded"
-      >
-        {{ errorMessage }}
-      </div>
-
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
         <div class="lg:col-span-2 space-y-6">
           <div class="bg-bg-canvas p-6 border border-gray-200 rounded-lg shadow-sm h-full">
