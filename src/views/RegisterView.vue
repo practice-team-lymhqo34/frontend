@@ -9,6 +9,7 @@ import apiClient from '@/api/axios.ts'
 import router from '@/router'
 import { getErrorMessage } from '@/utils/errorHandler'
 import { useToast } from '@/composables/useToast'
+import { AUTH } from '@/constants/ui'
 
 const { showSuccess, showError } = useToast()
 
@@ -32,15 +33,15 @@ const showConfirmPassword = ref(false)
 const isLoading = ref(false)
 
 const roleOptions = [
-  { value: 'client', label: 'Sender' },
-  { value: 'manager', label: 'Manager' },
-  { value: 'driver', label: 'Driver' },
+  { value: 'client', label: AUTH.roles.client },
+  { value: 'manager', label: AUTH.roles.manager },
+  { value: 'driver', label: AUTH.roles.driver },
 ]
 
 const validateFullName = () => {
   fullNameError.value = ''
   if (!fullName.value) {
-    fullNameError.value = 'Full name is required'
+    fullNameError.value = AUTH.errors.fullNameRequired
     return false
   }
   return true
@@ -49,10 +50,10 @@ const validateFullName = () => {
 const validateEmail = () => {
   emailError.value = ''
   if (!email.value) {
-    emailError.value = 'Email is required'
+    emailError.value = AUTH.errors.emailRequired
     return false
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
-    emailError.value = 'Invalid email format'
+    emailError.value = AUTH.errors.emailInvalid
     return false
   }
   return true
@@ -61,10 +62,10 @@ const validateEmail = () => {
 const validatePhone = () => {
   phoneNumberError.value = ''
   if (!phoneNumber.value) {
-    phoneNumberError.value = 'Phone number is required'
+    phoneNumberError.value = AUTH.errors.phoneRequired
     return false
   } else if (!/^\+?380\d{9}$/.test(phoneNumber.value)) {
-    phoneNumberError.value = 'Invalid phone format (e.g. +380991234567)'
+    phoneNumberError.value = AUTH.errors.phoneInvalid
     return false
   }
   return true
@@ -73,7 +74,7 @@ const validatePhone = () => {
 const validateRole = () => {
   roleError.value = ''
   if (!role.value) {
-    roleError.value = 'Please select a role'
+    roleError.value = AUTH.errors.roleRequired
     return false
   }
   return true
@@ -82,10 +83,10 @@ const validateRole = () => {
 const validatePassword = () => {
   passwordError.value = ''
   if (!password.value) {
-    passwordError.value = 'Password is required'
+    passwordError.value = AUTH.errors.passwordRequired
     return false
   } else if (password.value.length < 8) {
-    passwordError.value = 'Password must be at least 8 characters'
+    passwordError.value = AUTH.errors.passwordMinLength
     return false
   }
   return true
@@ -94,10 +95,10 @@ const validatePassword = () => {
 const validateConfirmPassword = () => {
   confirmPasswordError.value = ''
   if (!confirmPassword.value) {
-    confirmPasswordError.value = 'Please confirm your password'
+    confirmPasswordError.value = AUTH.errors.confirmPasswordRequired
     return false
   } else if (password.value !== confirmPassword.value) {
-    confirmPasswordError.value = 'Passwords do not match'
+    confirmPasswordError.value = AUTH.errors.passwordsMismatch
     return false
   }
   return true
@@ -135,7 +136,7 @@ const handleRegister = async () => {
       role: role.value,
     })
 
-    showSuccess('Registration successful! You can now log in.')
+    showSuccess(AUTH.register.success)
     router.push('/login')
   } catch (error: unknown) {
     const msg = getErrorMessage(error)
@@ -150,18 +151,20 @@ const handleRegister = async () => {
   <div class="flex min-h-screen font-roboto bg-bg-canvas">
     <AuthSidebar />
 
-    <div class="flex-1 flex flex-col justify-center px-6 sm:px-10 py-8 sm:py-0">
-      <div class="w-full max-w-[480px] mx-auto flex flex-col gap-6 sm:gap-8">
+    <div class="flex-1 flex flex-col justify-center px-6 sm:px-10 py-12 md:py-20">
+      <div class="w-full max-w-[480px] mx-auto flex flex-col gap-8 sm:gap-10">
         <div>
-          <h1 class="text-text-primary text-3xl sm:text-[42px] font-bold">Create an account</h1>
-          <p class="text-text-secondary mt-2">Join LogiFlow to manage your fleet efficiently.</p>
+          <h1 class="text-text-primary text-3xl sm:text-[42px] font-bold">
+            {{ AUTH.register.title }}
+          </h1>
+          <p class="text-text-secondary mt-2">{{ AUTH.register.subtitle }}</p>
         </div>
 
         <form class="flex flex-col gap-6" @submit.prevent="handleRegister">
           <BaseInput
             v-model="fullName"
-            label="Full Name"
-            placeholder="Full Name"
+            :label="AUTH.register.fullNameLabel"
+            :placeholder="AUTH.register.fullNamePlaceholder"
             :error="fullNameError"
             @input="fullNameError = ''"
             @blur="validateFullName"
@@ -169,8 +172,8 @@ const handleRegister = async () => {
 
           <BaseInput
             v-model="email"
-            label="Email Address"
-            placeholder="user@gmail.com"
+            :label="AUTH.register.emailLabel"
+            :placeholder="AUTH.register.emailPlaceholder"
             :error="emailError"
             @input="emailError = ''"
             @blur="validateEmail"
@@ -178,8 +181,8 @@ const handleRegister = async () => {
 
           <BaseInput
             v-model="phoneNumber"
-            label="Phone Number"
-            placeholder="+380991234567"
+            :label="AUTH.register.phoneLabel"
+            :placeholder="AUTH.register.phonePlaceholder"
             :error="phoneNumberError"
             @input="phoneNumberError = ''"
             @blur="validatePhone"
@@ -187,7 +190,7 @@ const handleRegister = async () => {
 
           <BaseSelect
             v-model="role"
-            label="Select Role"
+            :label="AUTH.register.roleLabel"
             :options="roleOptions"
             :error="roleError"
             @update:model-value="roleError = ''"
@@ -196,9 +199,9 @@ const handleRegister = async () => {
 
           <BaseInput
             v-model="password"
-            label="Password"
+            :label="AUTH.register.passwordLabel"
             :type="showPassword ? 'text' : 'password'"
-            placeholder="Min. 8 characters"
+            :placeholder="AUTH.register.passwordPlaceholder"
             :error="passwordError"
             @input="passwordError = ''"
             @blur="validatePassword"
@@ -211,9 +214,9 @@ const handleRegister = async () => {
           </BaseInput>
           <BaseInput
             v-model="confirmPassword"
-            label="Confirm Password"
+            :label="AUTH.register.confirmPasswordLabel"
             :type="showConfirmPassword ? 'text' : 'password'"
-            placeholder="Repeat password"
+            :placeholder="AUTH.register.confirmPasswordPlaceholder"
             :error="confirmPasswordError"
             @input="confirmPasswordError = ''"
             @blur="validateConfirmPassword"
@@ -226,17 +229,17 @@ const handleRegister = async () => {
           </BaseInput>
 
           <BaseButton type="submit" variant="primary" :disabled="isLoading">
-            {{ isLoading ? 'Creating Account...' : 'Create Account' }}
+            {{ isLoading ? AUTH.register.submitBtnLoading : AUTH.register.submitBtn }}
           </BaseButton>
         </form>
 
         <div class="h-px bg-border-default w-full"></div>
 
         <p class="text-sm">
-          <span class="text-text-secondary">Already have an account?</span>
-          <RouterLink to="/login" class="ml-1 text-text-link font-bold hover:underline"
-            >Log In</RouterLink
-          >
+          <span class="text-text-secondary">{{ AUTH.register.alreadyHaveAccount }}</span>
+          <RouterLink to="/login" class="ml-1 text-text-link font-bold hover:underline">{{
+            AUTH.register.logIn
+          }}</RouterLink>
         </p>
       </div>
     </div>
