@@ -37,58 +37,88 @@ const roleOptions = [
   { value: 'driver', label: 'Driver' },
 ]
 
-const validateForm = () => {
-  let isValid = true
+const validateFullName = () => {
   fullNameError.value = ''
-  emailError.value = ''
-  phoneNumberError.value = ''
-  roleError.value = ''
-  passwordError.value = ''
-  confirmPasswordError.value = ''
-
   if (!fullName.value) {
     fullNameError.value = 'Full name is required'
-    isValid = false
+    return false
   }
+  return true
+}
 
+const validateEmail = () => {
+  emailError.value = ''
   if (!email.value) {
     emailError.value = 'Email is required'
-    isValid = false
+    return false
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
     emailError.value = 'Invalid email format'
-    isValid = false
+    return false
   }
+  return true
+}
 
+const validatePhone = () => {
+  phoneNumberError.value = ''
   if (!phoneNumber.value) {
     phoneNumberError.value = 'Phone number is required'
-    isValid = false
+    return false
   } else if (!/^\+?380\d{9}$/.test(phoneNumber.value)) {
     phoneNumberError.value = 'Invalid phone format (e.g. +380991234567)'
-    isValid = false
+    return false
   }
+  return true
+}
 
+const validateRole = () => {
+  roleError.value = ''
   if (!role.value) {
     roleError.value = 'Please select a role'
-    isValid = false
+    return false
   }
+  return true
+}
 
+const validatePassword = () => {
+  passwordError.value = ''
   if (!password.value) {
     passwordError.value = 'Password is required'
-    isValid = false
+    return false
   } else if (password.value.length < 8) {
     passwordError.value = 'Password must be at least 8 characters'
-    isValid = false
+    return false
   }
+  return true
+}
 
+const validateConfirmPassword = () => {
+  confirmPasswordError.value = ''
   if (!confirmPassword.value) {
     confirmPasswordError.value = 'Please confirm your password'
-    isValid = false
+    return false
   } else if (password.value !== confirmPassword.value) {
     confirmPasswordError.value = 'Passwords do not match'
-    isValid = false
+    return false
   }
+  return true
+}
 
-  return isValid
+const validateForm = () => {
+  const isFullNameValid = validateFullName()
+  const isEmailValid = validateEmail()
+  const isPhoneValid = validatePhone()
+  const isRoleValid = validateRole()
+  const isPasswordValid = validatePassword()
+  const isConfirmPasswordValid = validateConfirmPassword()
+
+  return (
+    isFullNameValid &&
+    isEmailValid &&
+    isPhoneValid &&
+    isRoleValid &&
+    isPasswordValid &&
+    isConfirmPasswordValid
+  )
 }
 
 const handleRegister = async () => {
@@ -134,6 +164,7 @@ const handleRegister = async () => {
             placeholder="Full Name"
             :error="fullNameError"
             @input="fullNameError = ''"
+            @blur="validateFullName"
           />
 
           <BaseInput
@@ -142,6 +173,7 @@ const handleRegister = async () => {
             placeholder="user@gmail.com"
             :error="emailError"
             @input="emailError = ''"
+            @blur="validateEmail"
           />
 
           <BaseInput
@@ -150,6 +182,7 @@ const handleRegister = async () => {
             placeholder="+380991234567"
             :error="phoneNumberError"
             @input="phoneNumberError = ''"
+            @blur="validatePhone"
           />
 
           <BaseSelect
@@ -158,6 +191,7 @@ const handleRegister = async () => {
             :options="roleOptions"
             :error="roleError"
             @update:model-value="roleError = ''"
+            @blur="validateRole"
           />
 
           <BaseInput
@@ -167,6 +201,7 @@ const handleRegister = async () => {
             placeholder="Min. 8 characters"
             :error="passwordError"
             @input="passwordError = ''"
+            @blur="validatePassword"
           >
             <template #suffix>
               <button type="button" @click="showPassword = !showPassword">
@@ -181,6 +216,7 @@ const handleRegister = async () => {
             placeholder="Repeat password"
             :error="confirmPasswordError"
             @input="confirmPasswordError = ''"
+            @blur="validateConfirmPassword"
           >
             <template #suffix>
               <button type="button" @click="showConfirmPassword = !showConfirmPassword">

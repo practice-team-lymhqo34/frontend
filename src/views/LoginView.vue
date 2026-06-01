@@ -23,25 +23,31 @@ const emailError = ref('')
 const passwordError = ref('')
 const isLoading = ref(false)
 
-const validateForm = () => {
-  let isValid = true
+const validateEmail = () => {
   emailError.value = ''
-  passwordError.value = ''
-
   if (!email.value) {
     emailError.value = 'Email is required'
-    isValid = false
+    return false
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
     emailError.value = 'Invalid email format'
-    isValid = false
+    return false
   }
+  return true
+}
 
+const validatePassword = () => {
+  passwordError.value = ''
   if (!password.value) {
     passwordError.value = 'Password is required'
-    isValid = false
+    return false
   }
+  return true
+}
 
-  return isValid
+const validateForm = () => {
+  const isEmailValid = validateEmail()
+  const isPasswordValid = validatePassword()
+  return isEmailValid && isPasswordValid
 }
 
 const redirectUser = async () => {
@@ -101,6 +107,7 @@ const handleLogin = async () => {
             placeholder="user@gmail.com"
             :error="emailError"
             @input="emailError = ''"
+            @blur="validateEmail"
           />
 
           <BaseInput
@@ -110,6 +117,7 @@ const handleLogin = async () => {
             placeholder="*******"
             :error="passwordError"
             @input="passwordError = ''"
+            @blur="validatePassword"
           >
             <template #suffix>
               <button type="button" @click="showPassword = !showPassword">

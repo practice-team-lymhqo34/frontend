@@ -5,6 +5,10 @@ defineProps<{
   options: { value: string; label: string }[]
   error?: string
 }>()
+
+defineEmits<{
+  (e: 'blur', event: FocusEvent): void
+}>()
 </script>
 
 <template>
@@ -16,6 +20,7 @@ defineProps<{
     >
       <select
         v-model="model"
+        @blur="$emit('blur', $event)"
         class="flex-1 bg-transparent text-base text-text-primary outline-none appearance-none cursor-pointer"
       >
         <option value="" disabled>Select option</option>

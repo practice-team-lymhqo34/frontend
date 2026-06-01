@@ -6,6 +6,10 @@ defineProps<{
   placeholder?: string
   error?: string
 }>()
+
+defineEmits<{
+  (e: 'blur', event: FocusEvent): void
+}>()
 </script>
 
 <template>
@@ -19,6 +23,7 @@ defineProps<{
         v-model="model"
         :type="type || 'text'"
         :placeholder="placeholder"
+        @blur="$emit('blur', $event)"
         class="flex-1 bg-transparent text-base text-text-primary placeholder-text-placeholder outline-none font-normal leading-[140%]"
       />
       <slot name="suffix" />
