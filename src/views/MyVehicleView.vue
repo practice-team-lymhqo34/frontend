@@ -191,8 +191,9 @@ const deleteVehicle = async () => {
       </div>
     </div>
 
-    <div v-if="isLoading" class="flex justify-center py-12">
-      <Loader2 class="w-8 h-8 animate-spin text-brand-primary" />
+    <div v-if="isLoading" class="flex flex-col items-center justify-center py-20">
+      <Loader2 class="w-12 h-12 text-brand-primary animate-spin mb-4" />
+      <p class="text-text-secondary font-bold">LOADING VEHICLE DATA...</p>
     </div>
 
     <div v-else class="grid grid-cols-1 gap-8">
