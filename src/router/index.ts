@@ -11,6 +11,7 @@ import DashboardView from '@/views/DashboardView.vue'
 import ShipmentsListView from '@/views/ShipmentsListView.vue'
 import { useAuthStore } from '../stores/auth'
 import ShipmentDetailsView from '@/views/ShipmentDetailsView.vue'
+import NotFoundView from '@/views/NotFoundView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -121,6 +122,11 @@ const router = createRouter({
           component: () => import('../views/SettingsView.vue'),
         },
       ],
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: NotFoundView,
     },
   ],
 })
