@@ -54,7 +54,6 @@ const formatDate = (date: string | null | undefined): string => {
 
 <template>
   <div class="space-y-6">
-    <!-- Manager Billing Control - Big & Clear -->
     <div
       v-if="authStore.isManager"
       class="bg-white border-2 border-brand-primary rounded-xl p-6 shadow-sm"
@@ -135,7 +134,6 @@ const formatDate = (date: string | null | undefined): string => {
       </h2>
 
       <div class="divide-y divide-border-default">
-        <!-- Amount Row (For Clients) -->
         <div
           v-if="!authStore.isManager"
           class="grid grid-cols-2 items-center px-6 py-5 bg-brand-primary/5"

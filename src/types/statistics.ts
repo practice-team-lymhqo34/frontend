@@ -6,7 +6,6 @@ export interface MonthlyExpensePoint {
   total_distance: number
   invoice_count: number
   total_amount: number
-  // Compatibility fields for the chart
   date?: string
   amount?: number
 }

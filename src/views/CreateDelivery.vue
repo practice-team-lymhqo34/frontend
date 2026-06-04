@@ -354,7 +354,6 @@ const submitOrder = async () => {
             </div>
           </div>
 
-          <!-- Client-only preview (Read Only) -->
           <div v-else class="bg-bg-canvas p-6 border border-gray-200 rounded-lg shadow-sm">
             <h2 class="text-sm font-bold tracking-wider text-text-secondary uppercase mb-4">
               Estimated Delivery Cost

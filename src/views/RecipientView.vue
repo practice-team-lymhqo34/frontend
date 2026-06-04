@@ -4,10 +4,12 @@ import { invoicesApi } from '@/api/invoices'
 import { ordersApi } from '@/api/orders'
 import type { Invoice } from '@/types/invoice'
 import type { Order } from '@/types/order'
-import { Loader2, AlertCircle } from 'lucide-vue-next'
+import { Loader2, AlertCircle, ChevronRight } from 'lucide-vue-next'
 import { getErrorMessage } from '@/utils/errorHandler'
 import MonthlyExpensesChart from '@/components/dashboard/MonthlyExpensesChart.vue'
 import router from '@/router'
+import BaseModal from '@/components/ui/BaseModal.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
 
 const invoices = ref<Invoice[]>([])
 const orders = ref<Order[]>([])
@@ -293,9 +295,8 @@ const formatMonth = (dateString: string) => {
       </div>
     </div>
 
-    <!-- Invoice Details Modal -->
-    <BaseModal :show="showDetailsModal" @cancel="showDetailsModal = false">
-      <template #header>
+    <BaseModal :show="showDetailsModal" @cancel="showDetailsModal = false" title="Invoice Details">
+      <template>
         <div class="flex flex-col">
           <h3 class="text-xl font-bold text-text-primary">
             Invoice Details #INV-{{ String(selectedInvoice?.id).padStart(3, '0') }}
