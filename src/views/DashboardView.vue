@@ -91,6 +91,8 @@ const clientStats = computed(() => {
   ]
 })
 
+const currentMonth = new Date().toISOString().slice(0, 7)
+
 const activeDeliveries = computed(() =>
   orders.value
     .filter((o) => o.status === 'in_progress' || o.status === 'pending')
@@ -174,7 +176,7 @@ const cities = [
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div class="lg:col-span-2 space-y-6">
-            <MonthlyExpensesChart />
+            <MonthlyExpensesChart :month="currentMonth" />
             <ActiveDeliveries v-if="activeDeliveries.length > 0" :deliveries="activeDeliveries" />
             <div
               v-else

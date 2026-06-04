@@ -4,33 +4,78 @@ import { invoicesApi } from '@/api/invoices'
 import { ordersApi } from '@/api/orders'
 import type { Invoice } from '@/types/invoice'
 import type { Order } from '@/types/order'
-import { Loader2, AlertCircle } from 'lucide-vue-next'
+import { Loader2, AlertCircle, ChevronRight } from 'lucide-vue-next'
 import { getErrorMessage } from '@/utils/errorHandler'
 import MonthlyExpensesChart from '@/components/dashboard/MonthlyExpensesChart.vue'
+import router from '@/router'
+import BaseModal from '@/components/ui/BaseModal.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
 
 const invoices = ref<Invoice[]>([])
 const orders = ref<Order[]>([])
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 const selectedMonth = ref(new Date().toISOString().slice(0, 7)) // YYYY-MM
-const TARIFF_PER_KG = 45 // Virtual tariff matching chart
 
 const availableMonths = computed(() => {
   const months = new Set<string>()
   // Always include current month
-  months.add(new Date().toISOString().slice(0, 7))
+  const now = new Date()
+  months.add(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
 
   invoices.value.forEach((inv) => {
-    months.add(new Date(inv.billing_month).toISOString().slice(0, 7))
+    const d = new Date(inv.billing_month)
+    months.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
   })
 
   return Array.from(months).sort().reverse()
 })
 
 const filteredInvoices = computed(() => {
-  return invoices.value.filter((inv) =>
-    new Date(inv.billing_month).toISOString().startsWith(selectedMonth.value),
-  )
+  return invoices.value.filter((inv) => {
+    const d = new Date(inv.billing_month)
+    const year = d.getFullYear()
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    return `${year}-${month}` === selectedMonth.value
+  })
+})
+
+const totalShipments = computed(() => {
+  return filteredInvoices.value.reduce((acc, inv) => acc + (inv.total_shipment || 0), 0)
+})
+
+const showDetailsModal = ref(false)
+const selectedInvoice = ref<Invoice | null>(null)
+const invoiceShipments = ref<Order[]>([])
+const isDetailsLoading = ref(false)
+
+const openInvoiceDetails = async (invoice: Invoice) => {
+  selectedInvoice.value = invoice
+  showDetailsModal.value = true
+  isDetailsLoading.value = true
+  try {
+    // Filter orders for this billing month
+    const d = new Date(invoice.billing_month)
+    const year = d.getFullYear()
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const monthStr = `${year}-${month}`
+
+    invoiceShipments.value = orders.value.filter((order) => {
+      if (order.status.toUpperCase() !== 'COMPLETED' || !order.received_at) return false
+      const rd = new Date(order.received_at)
+      const ry = rd.getFullYear()
+      const rm = String(rd.getMonth() + 1).padStart(2, '0')
+      return `${ry}-${rm}` === monthStr
+    })
+  } catch (err) {
+    console.error('Failed to filter invoice shipments:', err)
+  } finally {
+    isDetailsLoading.value = false
+  }
+}
+
+const totalCost = computed(() => {
+  return filteredInvoices.value.reduce((acc, inv) => acc + (inv.total_amount || 0), 0)
 })
 
 const fetchData = async () => {
@@ -104,14 +149,14 @@ const formatMonth = (dateString: string) => {
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
       <div class="lg:col-span-2">
-        <MonthlyExpensesChart />
+        <MonthlyExpensesChart :month="selectedMonth" />
       </div>
       <div class="bg-bg-canvas border border-border-default rounded-lg p-6">
         <h3 class="text-lg font-bold mb-4">Financial Summary</h3>
         <div class="space-y-4">
           <div class="flex justify-between items-center pb-4 border-b border-border-default">
-            <span class="text-text-secondary">Total Invoices</span>
-            <span class="font-bold">{{ filteredInvoices.length }}</span>
+            <span class="text-text-secondary">Total Shipments</span>
+            <span class="font-bold">{{ totalShipments }}</span>
           </div>
           <div class="flex justify-between items-center pb-4 border-b border-border-default">
             <span class="text-text-secondary">Total Weight</span>
@@ -123,20 +168,14 @@ const formatMonth = (dateString: string) => {
             >
           </div>
           <div class="flex justify-between items-center pb-4 border-b border-border-default">
-            <span class="text-text-secondary">Estimated Cost</span>
-            <span class="font-bold text-brand-primary"
-              >₴{{
-                (
-                  filteredInvoices.reduce((acc, inv) => acc + inv.total_weight, 0) * TARIFF_PER_KG
-                ).toLocaleString()
-              }}</span
-            >
+            <span class="text-text-secondary">Total Expenses</span>
+            <span class="font-bold text-brand-primary">₴{{ totalCost.toLocaleString() }}</span>
           </div>
           <div class="pt-2">
             <p
               class="text-[10px] text-text-placeholder mt-3 text-center uppercase tracking-wider font-bold"
             >
-              * Billing is calculated at a fixed rate of ₴{{ TARIFF_PER_KG }}/kg
+              * Billing is calculated based on completed orders for the period
             </p>
           </div>
         </div>
@@ -207,6 +246,11 @@ const formatMonth = (dateString: string) => {
                 <th
                   class="py-4 px-6 text-xs font-bold text-text-secondary uppercase tracking-wider"
                 >
+                  Amount
+                </th>
+                <th
+                  class="py-4 px-6 text-xs font-bold text-text-secondary uppercase tracking-wider"
+                >
                   Generated At
                 </th>
                 <th
@@ -221,6 +265,7 @@ const formatMonth = (dateString: string) => {
                 v-for="invoice in filteredInvoices"
                 :key="invoice.id"
                 class="hover:bg-bg-surface transition-colors cursor-pointer group"
+                @click="openInvoiceDetails(invoice)"
               >
                 <td class="py-4 px-6 text-sm text-text-primary font-medium">
                   #INV-{{ String(invoice.id).padStart(3, '0') }}
@@ -230,6 +275,9 @@ const formatMonth = (dateString: string) => {
                 </td>
                 <td class="py-4 px-6 text-sm text-text-secondary">{{ invoice.total_shipment }}</td>
                 <td class="py-4 px-6 text-sm text-text-secondary">{{ invoice.total_weight }} kg</td>
+                <td class="py-4 px-6 text-sm font-bold text-text-primary">
+                  ₴{{ (invoice.total_amount || 0).toLocaleString() }}
+                </td>
                 <td class="py-4 px-6 text-sm text-text-secondary">
                   {{ formatDate(invoice.generated_at) }}
                 </td>
@@ -246,6 +294,69 @@ const formatMonth = (dateString: string) => {
         </div>
       </div>
     </div>
+
+    <BaseModal :show="showDetailsModal" @cancel="showDetailsModal = false" title="Invoice Details">
+      <template>
+        <div class="flex flex-col">
+          <h3 class="text-xl font-bold text-text-primary">
+            Invoice Details #INV-{{ String(selectedInvoice?.id).padStart(3, '0') }}
+          </h3>
+          <p class="text-sm text-text-secondary">
+            Shipment History for
+            {{ selectedInvoice ? formatMonth(selectedInvoice.billing_month) : '' }}
+          </p>
+        </div>
+      </template>
+
+      <div class="mt-4">
+        <div v-if="isDetailsLoading" class="flex justify-center py-10">
+          <Loader2 class="w-8 h-8 animate-spin text-brand-primary" />
+        </div>
+        <div
+          v-else-if="invoiceShipments.length === 0"
+          class="text-center py-10 text-text-secondary"
+        >
+          No individual shipment records found for this period.
+        </div>
+        <div v-else class="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+          <div
+            v-for="order in invoiceShipments"
+            :key="order.id"
+            class="flex items-center justify-between p-4 bg-bg-surface rounded-lg border border-border-default hover:border-brand-primary/30 transition-colors cursor-pointer"
+            @click="router.push(`/recipient/orders/${order.id}`)"
+          >
+            <div class="flex-1">
+              <div class="font-bold text-sm text-text-primary">{{ order.title }}</div>
+              <div class="text-[10px] text-text-secondary flex items-center gap-1 mt-1">
+                <span>{{ order.origin_address }}</span>
+                <ChevronRight class="w-2 h-2" />
+                <span>{{ order.destination_address }}</span>
+              </div>
+            </div>
+            <div class="text-right ml-4">
+              <div class="font-bold text-sm text-brand-primary">
+                ₴{{ order.total_amount.toLocaleString() }}
+              </div>
+              <div class="text-[10px] text-text-placeholder uppercase font-bold">
+                {{ order.received_at ? new Date(order.received_at).toLocaleDateString() : '' }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-between items-center w-full">
+          <div class="text-left">
+            <span class="text-xs text-text-secondary block">Total Amount</span>
+            <span class="text-lg font-bold text-brand-primary"
+              >₴{{ selectedInvoice?.total_amount.toLocaleString() }}</span
+            >
+          </div>
+          <BaseButton variant="secondary" @click="showDetailsModal = false">Close</BaseButton>
+        </div>
+      </template>
+    </BaseModal>
   </div>
 </template>
 

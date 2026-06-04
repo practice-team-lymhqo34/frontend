@@ -5,6 +5,7 @@ export interface Order {
   title: string
   description: string | null
   weight: number
+  total_amount: number
   status: OrderStatus
   owner_id: number
   origin_address: string
@@ -18,6 +19,7 @@ export interface OrderCreate {
   title: string
   description: string | null
   weight: number
+  total_amount: number
   origin_address: string
   destination_address: string
   is_template: boolean
