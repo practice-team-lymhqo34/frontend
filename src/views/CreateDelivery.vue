@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref, watch, onMounted } from 'vue'
+import { reactive, ref, watch, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '@/api/axios'
 import { ordersApi } from '@/api/orders'
@@ -10,6 +10,7 @@ import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseCheckbox from '@/components/ui/BaseCheckbox.vue'
 import { getErrorMessage } from '@/utils/errorHandler'
 import { useToast } from '@/composables/useToast'
+import { useAuthStore } from '@/stores/auth.ts'
 
 interface OrderForm {
   title: string
@@ -20,11 +21,14 @@ interface OrderForm {
   origin_address: string
   destination_address: string
   isTemplate: boolean
+  tariff: string
 }
 
 const STORAGE_KEY = 'order-form-draft'
+const DEFAULT_TARIFF = 45 // UAH per kg
 
 const router = useRouter()
+const authStore = useAuthStore()
 const { showSuccess, showError } = useToast()
 const isSubmitting = ref(false)
 const templates = ref<Order[]>([])
@@ -37,6 +41,7 @@ const errors = reactive({
   quantity: '',
   origin_address: '',
   destination_address: '',
+  tariff: '',
 })
 
 const savedDraft = localStorage.getItem(STORAGE_KEY)
@@ -53,8 +58,16 @@ const form = reactive<OrderForm>(
         origin_address: '',
         destination_address: '',
         isTemplate: false,
+        tariff: DEFAULT_TARIFF.toString(),
       },
 )
+
+const estimatedCost = computed(() => {
+  const w = parseFloat(form.weight)
+  const t = parseFloat(form.tariff)
+  if (isNaN(w) || isNaN(t)) return 0
+  return w * t
+})
 
 onMounted(async () => {
   try {
@@ -177,6 +190,7 @@ const submitOrder = async () => {
       title: form.title,
       description: enrichedDescription,
       weight: parseFloat(form.weight),
+      total_amount: estimatedCost.value,
       origin_address: form.origin_address,
       destination_address: form.destination_address,
       is_template: form.isTemplate,
@@ -310,6 +324,64 @@ const submitOrder = async () => {
                 :error="errors.quantity"
               />
             </div>
+          </div>
+
+          <!-- Manager-only Tariff block -->
+          <div
+            v-if="authStore.isManager"
+            class="bg-bg-canvas p-6 border border-gray-200 rounded-lg shadow-sm"
+          >
+            <h2 class="text-sm font-bold tracking-wider text-text-secondary uppercase mb-6">
+              Pricing & Tariff (Manager Only)
+            </h2>
+
+            <div class="space-y-6">
+              <BaseInput
+                v-model="form.tariff"
+                label="Tariff (UAH/kg)"
+                type="number"
+                placeholder="45"
+                :error="errors.tariff"
+              />
+              <div class="p-4 bg-bg-surface rounded-lg border border-border-default">
+                <div class="flex justify-between items-center">
+                  <span class="text-sm text-text-secondary">Estimated Total:</span>
+                  <span class="text-lg font-bold text-brand-primary"
+                    >₴{{ estimatedCost.toLocaleString() }}</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Client-only preview (Read Only) -->
+          <div v-else class="bg-bg-canvas p-6 border border-gray-200 rounded-lg shadow-sm">
+            <h2 class="text-sm font-bold tracking-wider text-text-secondary uppercase mb-4">
+              Estimated Delivery Cost
+            </h2>
+            <div
+              class="flex justify-between items-center p-4 bg-brand-primary/5 rounded border border-brand-primary/10"
+            >
+              <div class="flex flex-col">
+                <span class="text-[10px] text-brand-primary font-black uppercase tracking-widest"
+                  >Est. Total</span
+                >
+                <span class="text-xl font-bold text-text-primary"
+                  >₴{{ estimatedCost.toLocaleString() }}</span
+                >
+              </div>
+              <div class="text-right">
+                <span class="text-[10px] text-text-placeholder font-bold uppercase block"
+                  >Rate</span
+                >
+                <span class="text-xs font-medium text-text-secondary"
+                  >₴{{ DEFAULT_TARIFF }}/kg</span
+                >
+              </div>
+            </div>
+            <p class="text-[10px] text-text-placeholder mt-3 italic leading-relaxed">
+              * The final price will be confirmed by a manager after shipment review and weighing.
+            </p>
           </div>
 
           <div class="bg-bg-canvas p-6 border border-gray-200 rounded-lg shadow-sm">

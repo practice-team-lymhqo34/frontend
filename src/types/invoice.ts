@@ -6,5 +6,6 @@ export interface Invoice {
   total_weight: number
   total_volume: number
   total_distance: number
+  total_amount: number
   generated_at: string
 }

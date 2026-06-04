@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import VueApexCharts from 'vue3-apexcharts'
 import { getMonthlyExpenses } from '@/api/statistics'
 import type { MonthlyExpensePoint } from '@/types/statistics'
 import { Loader2 } from 'lucide-vue-next'
 import type { ApexOptions } from 'apexcharts'
+
+const props = defineProps<{
+  month?: string
+}>()
 
 const loading = ref(true)
 const expensesData = ref<MonthlyExpensePoint[]>([])
@@ -14,7 +18,7 @@ const period = ref('')
 const fetchChartData = async () => {
   try {
     loading.value = true
-    const response = await getMonthlyExpenses()
+    const response = await getMonthlyExpenses(props.month)
     expensesData.value = response.data
     totalAmount.value = response.total_amount
     period.value = response.period
@@ -29,64 +33,107 @@ onMounted(() => {
   fetchChartData()
 })
 
-const TARIFF_PER_KG = 45 // Virtual tariff: 45 UAH per kg
+watch(
+  () => props.month,
+  () => {
+    fetchChartData()
+  },
+)
 
 const chartOptions = computed<ApexOptions>(() => ({
   chart: {
     type: 'bar',
     toolbar: { show: false },
-    fontFamily: 'inherit',
+    fontFamily: 'Roboto, sans-serif',
+    animations: {
+      enabled: true,
+      easing: 'easeinout',
+      speed: 800,
+    },
   },
   plotOptions: {
     bar: {
-      borderRadius: 4,
-      columnWidth: '60%',
+      borderRadius: 6,
+      columnWidth: expensesData.value.length > 15 ? '80%' : '40%',
       distributed: false,
+      dataLabels: {
+        position: 'top',
+      },
     },
   },
-  dataLabels: { enabled: false },
+  dataLabels: {
+    enabled: false,
+  },
   xaxis: {
     type: 'datetime',
     categories: expensesData.value.map((p) => p.month),
     labels: {
-      style: { colors: '#9ca3af' },
+      style: {
+        colors: '#64748b',
+        fontSize: '12px',
+        fontWeight: 500,
+      },
       datetimeFormatter: {
         year: 'yyyy',
         month: 'MMM',
         day: 'dd',
-        hour: 'HH:mm',
       },
     },
-    tickAmount: 10, // Ensure spread across the month
+    axisBorder: { show: false },
+    axisTicks: { show: false },
   },
   yaxis: {
     labels: {
-      style: { colors: '#9ca3af' },
+      style: {
+        colors: '#64748b',
+        fontSize: '12px',
+      },
       formatter: (val: number) => `₴${val.toLocaleString()}`,
     },
   },
   tooltip: {
+    theme: 'light',
     x: { format: 'dd MMM yyyy' },
     y: {
       formatter: (val: number) => `₴${val.toLocaleString()}`,
+      title: {
+        formatter: () => 'Expenses:',
+      },
+    },
+    marker: { show: false },
+  },
+  colors: ['#1A7FD4'],
+  grid: {
+    borderColor: '#E8EFF6',
+    strokeDashArray: 4,
+    padding: {
+      left: 10,
+      right: 10,
     },
   },
-
-  colors: ['#3b82f6'],
-  grid: {
-    borderColor: '#374151',
-    strokeDashArray: 4,
+  fill: {
+    type: 'gradient',
+    gradient: {
+      shade: 'light',
+      type: 'vertical',
+      shadeIntensity: 0.25,
+      gradientToColors: undefined,
+      inverseColors: true,
+      opacityFrom: 0.85,
+      opacityTo: 0.85,
+      stops: [50, 0, 100],
+    },
   },
 }))
 
 const series = computed(() => [
   {
     name: 'Total Expenses',
-    data: expensesData.value.map((p) => p.total_weight * TARIFF_PER_KG),
+    data: expensesData.value.map((p) => p.total_amount),
   },
 ])
 
-const totalExpenses = computed(() => totalAmount.value * TARIFF_PER_KG)
+const totalExpenses = computed(() => totalAmount.value)
 
 const isEmpty = computed(() => !loading.value && expensesData.value.length === 0)
 </script>
