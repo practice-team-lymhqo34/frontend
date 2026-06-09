@@ -29,14 +29,18 @@ export const useAuthStore = defineStore('auth', () => {
     const saved = localStorage.getItem('last_trip_stats')
     return saved ? JSON.parse(saved) : null
   }
-  const lastTripStats = ref<{ distance: number; fuel: number } | null>(getInitialTripStats())
+  const lastTripStats = ref<{ distance: number; fuel: number; cost: number } | null>(
+    getInitialTripStats(),
+  )
 
   const getInitialHistory = () => {
     const saved = localStorage.getItem('trip_history')
     return saved ? JSON.parse(saved) : []
   }
   const tripHistory =
-    ref<{ date: string; distance: number; fuel: number; routeId: number }[]>(getInitialHistory())
+    ref<{ date: string; distance: number; fuel: number; cost: number; routeId: number }[]>(
+      getInitialHistory(),
+    )
 
   const isAuthenticated = computed(() => !!user.value)
   const userRole = computed(() => user.value?.role)
@@ -45,12 +49,17 @@ export const useAuthStore = defineStore('auth', () => {
   const isManager = computed(() => user.value?.role === 'manager')
   const isDriver = computed(() => user.value?.role === 'driver')
 
-  function setLastTripStats(stats: { distance: number; fuel: number }) {
+  function setLastTripStats(stats: { distance: number; fuel: number; cost: number }) {
     lastTripStats.value = stats
     localStorage.setItem('last_trip_stats', JSON.stringify(stats))
   }
 
-  function addTripToHistory(trip: { distance: number; fuel: number; routeId: number }) {
+  function addTripToHistory(trip: {
+    distance: number
+    fuel: number
+    cost: number
+    routeId: number
+  }) {
     const newTrip = { ...trip, date: new Date().toISOString() }
     tripHistory.value = [newTrip, ...tripHistory.value].slice(0, 50) // Keep last 50
     localStorage.setItem('trip_history', JSON.stringify(tripHistory.value))

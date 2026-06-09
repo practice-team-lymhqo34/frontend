@@ -10,6 +10,7 @@ export interface Order {
   owner_id: number
   origin_address: string
   destination_address: string
+  distance: number
   is_template: boolean
   created_at: string
   received_at?: string | null
@@ -22,5 +23,6 @@ export interface OrderCreate {
   total_amount: number
   origin_address: string
   destination_address: string
+  distance: number
   is_template: boolean
 }

@@ -7,6 +7,7 @@ export interface Vehicle {
   max_weight: number
   max_volume: number
   fuel_consumption: number
+  fuel_price: number
   current_mileage: number
   maintenance_interval: number
 }
@@ -18,6 +19,7 @@ export interface VehicleCreate {
   max_weight: number
   max_volume: number
   fuel_consumption: number
+  fuel_price: number
   current_mileage: number
   maintenance_interval: number
 }
@@ -25,5 +27,6 @@ export interface VehicleCreate {
 export interface VehicleUpdate {
   current_mileage?: number
   fuel_consumption?: number
+  fuel_price?: number
   maintenance_interval?: number
 }
