@@ -11,6 +11,7 @@ export interface Route {
   is_delayed?: boolean
   delay_minutes?: number
   completed_at: string | null
+  fuel_cost?: number | null
   statuses?: RouteStatus[]
   order?: Order
 }

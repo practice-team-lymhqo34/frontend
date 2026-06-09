@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { Package, Clock, ExternalLink } from 'lucide-vue-next'
 
-interface Delivery {
+export interface Delivery {
   id: string
+  orderId?: string
   title: string
   status: string
   estimatedArrival: string
@@ -10,15 +11,21 @@ interface Delivery {
 
 defineProps<{
   deliveries: Delivery[]
+  title?: string
+}>()
+
+const emit = defineEmits<{
+  select: [delivery: Delivery]
+  viewAll: []
 }>()
 </script>
 
 <template>
   <div class="bg-bg-canvas border border-border-default rounded-lg p-6">
     <div class="flex items-center justify-between mb-6">
-      <h3 class="text-xl font-bold text-text-primary">Active Deliveries</h3>
+      <h3 class="text-xl font-bold text-text-primary">{{ title || 'Active Deliveries' }}</h3>
       <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-        {{ deliveries.length }} Active
+        {{ deliveries.length }} Recent
       </span>
     </div>
 
@@ -39,7 +46,8 @@ defineProps<{
       <div
         v-for="delivery in deliveries"
         :key="delivery.id"
-        class="flex items-center justify-between p-4 bg-bg-surface rounded-lg border border-border-default hover:border-primary/50 transition-colors cursor-pointer group"
+        @click="emit('select', delivery)"
+        class="flex items-center justify-between p-4 bg-bg-surface rounded-lg border border-border-default hover:border-primary hover:shadow-md transition-all cursor-pointer group"
       >
         <div class="flex items-center gap-4">
           <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
@@ -71,9 +79,10 @@ defineProps<{
 
     <button
       v-if="deliveries.length > 0"
-      class="w-full mt-6 py-2 text-sm font-medium text-text-secondary hover:text-primary transition-colors border-t border-border-default pt-4"
+      @click="emit('viewAll')"
+      class="w-full mt-6 py-2.5 text-sm font-bold text-brand-primary hover:bg-brand-primary/5 transition-all border border-brand-primary/20 rounded-md"
     >
-      View all shipments
+      View all
     </button>
   </div>
 </template>

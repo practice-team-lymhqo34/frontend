@@ -57,7 +57,7 @@ const router = createRouter({
         {
           path: 'route-assignment',
           name: 'route-assignment',
-          component: () => import('../views/RouteAssignmentView.vue'),
+          component: () => import('@/views/RouteAssignmentView.vue'),
         },
         {
           path: 'settings',

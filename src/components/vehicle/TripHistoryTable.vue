@@ -1,33 +1,32 @@
 <script setup lang="ts">
-import { Clock } from 'lucide-vue-next'
+import { Clock, Loader2 } from 'lucide-vue-next'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import { formatDate, formatTime } from '@/utils/date'
-
-interface TripRecord {
-  date: string
-  routeId: number
-  distance: number
-  fuel: number
-}
+import type { TripRecord } from '@/types'
 
 defineProps<{
   trips: TripRecord[]
   hasMore: boolean
-}>()
-
-defineEmits<{
-  showMore: []
+  isLoading?: boolean
 }>()
 </script>
 
 <template>
-  <section class="bg-bg-canvas border border-border-default rounded-lg p-6 shadow-sm">
-    <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
-      <Clock class="w-5 h-5 text-brand-primary" /> Recent Trips History
-    </h2>
+  <section
+    class="bg-bg-canvas border border-border-default rounded-lg p-4 md:p-6 shadow-sm overflow-hidden"
+  >
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-lg md:text-xl font-bold flex items-center gap-2">
+        <Clock class="w-5 h-5 text-brand-primary" /> Recent Trips History
+      </h2>
+      <div v-if="isLoading" class="flex items-center gap-2 text-brand-primary text-sm font-bold">
+        <Loader2 class="w-4 h-4 animate-spin" />
+        REFRESHING...
+      </div>
+    </div>
 
-    <div v-if="trips.length > 0" class="overflow-x-auto">
-      <table class="w-full text-left">
+    <div v-if="trips.length > 0" class="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+      <table class="w-full text-left min-w-[700px]">
         <thead>
           <tr
             class="text-[10px] font-black text-text-placeholder uppercase tracking-widest border-b border-border-default"
@@ -36,6 +35,7 @@ defineEmits<{
             <th class="pb-3">Route ID</th>
             <th class="pb-3 text-right">Distance</th>
             <th class="pb-3 text-right">Fuel Spent</th>
+            <th class="pb-3 text-right">Fuel Cost</th>
             <th class="pb-3 text-right">Efficiency</th>
           </tr>
         </thead>
@@ -49,13 +49,25 @@ defineEmits<{
             </td>
             <td class="py-4 font-bold">#{{ trip.routeId }}</td>
             <td class="py-4 text-right font-medium">{{ trip.distance }} km</td>
+
             <td class="py-4 text-right">
-              <span class="bg-brand-primary/10 text-brand-primary px-2 py-1 rounded font-bold">
-                {{ trip.fuel }} L
+              <span class="bg-brand-primary/5 text-brand-primary px-2 py-1 rounded font-bold">
+                {{ Number(trip.fuel || 0).toFixed(2) }} L
               </span>
             </td>
+
+            <td class="py-4 text-right">
+              <span class="bg-brand-primary/10 text-brand-primary px-2 py-1 rounded font-bold">
+                {{ Number(trip.cost || 0).toFixed(2) }} UAH
+              </span>
+            </td>
+
             <td class="py-4 text-right font-medium text-text-secondary">
-              {{ trip.distance > 0 ? ((trip.fuel / trip.distance) * 100).toFixed(1) : '0.0' }}
+              {{
+                trip.distance > 0
+                  ? ((Number(trip.fuel || 0) / Number(trip.distance)) * 100).toFixed(1)
+                  : '0.0'
+              }}
               <span class="text-[10px]">L/100km</span>
             </td>
           </tr>

@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { Truck, Loader2, AlertCircle } from 'lucide-vue-next'
 import { vehiclesApi } from '@/api/vehicles'
+import { routesApi } from '@/api/routes'
 import type { VehicleCreate, Vehicle } from '@/types/vehicle'
 import { getErrorMessage } from '@/utils/errorHandler'
 import { useNotificationStore } from '@/stores/notifications'
@@ -11,6 +12,7 @@ import VehicleSpecsForm from '@/components/vehicle/VehicleSpecsForm.vue'
 import MaintenanceAlerts from '@/components/vehicle/MaintenanceAlerts.vue'
 import FuelInsights from '@/components/vehicle/FuelInsights.vue'
 import TripHistoryTable from '@/components/vehicle/TripHistoryTable.vue'
+import type { TripRecord } from '@/types/vehicle'
 
 const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
@@ -24,6 +26,7 @@ const vehicleForm = ref<VehicleCreate>({
   max_weight: 0,
   max_volume: 0,
   fuel_consumption: 0,
+  fuel_price: 0,
   current_mileage: 0,
   maintenance_interval: 10000,
 })
@@ -31,21 +34,59 @@ const vehicleForm = ref<VehicleCreate>({
 const isSaving = ref(false)
 const isDeleting = ref(false)
 const isLoading = ref(true)
+const isHistoryLoading = ref(false)
 const error = ref('')
 const successMessage = ref('')
 const isDeleteModalOpen = ref(false)
 const displayLimit = ref(7)
+const dbTripHistory = ref<TripRecord[]>([])
 
 const visibleTrips = computed(() => {
-  return authStore.tripHistory.slice(0, displayLimit.value)
+  return dbTripHistory.value.slice(0, displayLimit.value)
 })
 
 const hasMoreTrips = computed(() => {
-  return authStore.tripHistory.length > displayLimit.value
+  return dbTripHistory.value.length > displayLimit.value
 })
 
 const showMore = () => {
   displayLimit.value += 10
+}
+
+const fetchTripHistory = async () => {
+  isHistoryLoading.value = true
+  try {
+    const routes = await routesApi.getDriverRoutes()
+    console.log('Fetched routes for history:', routes)
+
+    dbTripHistory.value = routes
+      .filter((r) => r.completed_at || r.started_at || r.eta)
+      .map((r) => {
+        const distance = r.order?.distance || 0
+        const fuelConsumption = vehicleForm.value.fuel_consumption || 10
+        const fuelPrice = vehicleForm.value.fuel_price || 50
+
+        const calculatedCost =
+          r.fuel_cost !== null && r.fuel_cost !== undefined
+            ? r.fuel_cost
+            : Number((((distance * fuelConsumption) / 100) * fuelPrice).toFixed(2))
+
+        return {
+          date: r.completed_at || r.started_at || r.eta,
+          routeId: r.id,
+          distance: distance,
+          fuel: Number(((distance * fuelConsumption) / 100).toFixed(2)),
+          cost: calculatedCost,
+        }
+      })
+      .sort((a, b) => new Date(b.date!).getTime() - new Date(a.date!).getTime())
+
+    console.log('Processed trip history:', dbTripHistory.value)
+  } catch (err) {
+    console.error('Failed to fetch trip history:', err)
+  } finally {
+    isHistoryLoading.value = false
+  }
 }
 
 const fetchVehicle = async () => {
@@ -77,13 +118,14 @@ const populateForm = (v: Vehicle) => {
     max_weight: v.max_weight,
     max_volume: v.max_volume,
     fuel_consumption: v.fuel_consumption,
+    fuel_price: v.fuel_price,
     current_mileage: v.current_mileage,
     maintenance_interval: v.maintenance_interval,
   }
 }
 
 onMounted(async () => {
-  await fetchVehicle()
+  await Promise.all([fetchVehicle(), fetchTripHistory()])
   if (authStore.isAuthenticated) {
     await notificationStore.fetchNotifications()
   }
@@ -97,6 +139,7 @@ const resetForm = () => {
     max_weight: 0,
     max_volume: 0,
     fuel_consumption: 0,
+    fuel_price: 0,
     current_mileage: 0,
     maintenance_interval: 10000,
   }
@@ -108,13 +151,14 @@ const saveVehicle = async () => {
 
   if (
     vehicleForm.value.fuel_consumption <= 0 ||
+    vehicleForm.value.fuel_price <= 0 ||
     vehicleForm.value.current_mileage < 0 ||
     vehicleForm.value.max_weight <= 0 ||
     vehicleForm.value.max_volume <= 0 ||
     vehicleForm.value.maintenance_interval <= 0
   ) {
     error.value =
-      'Please check the number format. Weight, volume, consumption and interval must be greater than 0.'
+      'Please check the number format. Weight, volume, consumption, fuel price and interval must be greater than 0.'
     return
   }
 
@@ -125,6 +169,7 @@ const saveVehicle = async () => {
     if (authStore.user?.vehicle?.id) {
       updatedVehicle = await vehiclesApi.updateVehicle(authStore.user.vehicle.id, {
         fuel_consumption: vehicleForm.value.fuel_consumption,
+        fuel_price: vehicleForm.value.fuel_price,
         current_mileage: vehicleForm.value.current_mileage,
         maintenance_interval: vehicleForm.value.maintenance_interval,
       })
@@ -221,6 +266,7 @@ const deleteVehicle = async () => {
         v-if="isEditing"
         :trips="visibleTrips"
         :has-more="hasMoreTrips"
+        :is-loading="isHistoryLoading"
         @show-more="showMore"
       />
     </div>

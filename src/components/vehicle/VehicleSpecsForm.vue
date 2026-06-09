@@ -135,6 +135,24 @@ const emit = defineEmits<{
           <label
             class="text-sm font-bold text-text-secondary uppercase tracking-wider flex items-center gap-2"
           >
+            <Fuel class="w-4 h-4 text-brand-primary" /> Fuel Price (UAH/l)
+          </label>
+          <input
+            v-model.number="vehicleForm.fuel_price"
+            type="number"
+            required
+            step="0.1"
+            :class="[
+              'w-full px-4 py-3 bg-bg-surface border rounded focus:outline-none focus:border-brand-primary',
+              vehicleForm.fuel_price < 0 ? 'border-red-500' : 'border-border-default',
+            ]"
+          />
+        </div>
+
+        <div class="space-y-1">
+          <label
+            class="text-sm font-bold text-text-secondary uppercase tracking-wider flex items-center gap-2"
+          >
             <Gauge class="w-4 h-4 text-brand-primary" /> Current Mileage (km)
           </label>
           <input

@@ -29,9 +29,21 @@ export const routesApi = {
     return response.data
   },
 
-  async assignRoute(orderId: number, driver_id: number, eta: string): Promise<Route> {
+  async getDriverRoutes(status?: string): Promise<Route[]> {
+    const params = status ? { status } : {}
+    const response = await apiClient.get<Route[]>('/dashboard/routes', { params })
+    return response.data
+  },
+
+  async assignRoute(
+    orderId: number,
+    driver_id: number,
+    vehicle_id: number,
+    eta: string,
+  ): Promise<Route> {
     const response = await apiClient.post<Route>(`/dashboard/orders/${orderId}/assign`, {
       driver_id,
+      vehicle_id,
       eta,
     })
     return response.data

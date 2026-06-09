@@ -31,15 +31,15 @@ const error = ref('')
 const isPhotoModalOpen = ref(false)
 const isSummaryModalOpen = ref(false)
 const selectedRouteForPhoto = ref<number | null>(null)
-const tripSummary = ref({ distance: 0, fuel: 0 })
+const tripSummary = ref({ distance: 0, fuel: 0, cost: 0 })
 
 const openPhotoUpload = (routeId: number) => {
   selectedRouteForPhoto.value = routeId
   isPhotoModalOpen.value = true
 }
 
-const showTripSummary = (distance: number, fuel: number) => {
-  tripSummary.value = { distance, fuel }
+const showTripSummary = (distance: number, fuel: number, cost: number) => {
+  tripSummary.value = { distance, fuel, cost }
   isSummaryModalOpen.value = true
 }
 
@@ -118,16 +118,18 @@ const updateStatus = async (routeId: number, status: string) => {
     showToast(`Status updated to ${status.replace('_', ' ')}`)
 
     if (status.toLowerCase() === 'delivered') {
-      const currentVehicle = vehicle.value || authStore.user?.vehicle
+      const updatedRoute = routes.value.find((r) => r.id === routeId)
+      if (updatedRoute && updatedRoute.fuel_cost !== null) {
+        const distance = updatedRoute.order?.distance || 0
+        const fuelConsumption = authStore.user?.vehicle?.fuel_consumption || 0
 
-      if (currentVehicle) {
-        // Mocked distance for now (e.g., between 5 and 45 km)
-        const mockDistance = Math.floor(Math.random() * 40) + 5
-        const fuelConsumption = Number(currentVehicle.fuel_consumption) || 0
-        const fuelSpent = (mockDistance * fuelConsumption) / 100
-        const stats = { distance: mockDistance, fuel: Number(fuelSpent.toFixed(2)) }
+        const stats = {
+          distance: distance,
+          fuel: Number(((distance * fuelConsumption) / 100).toFixed(2)),
+          cost: updatedRoute.fuel_cost || 0,
+        }
 
-        showTripSummary(stats.distance, stats.fuel)
+        showTripSummary(stats.distance, stats.fuel, stats.cost)
         authStore.setLastTripStats(stats)
         authStore.addTripToHistory({ ...stats, routeId })
       }
@@ -580,7 +582,7 @@ const extractDetails = (description: string | null | undefined) => {
         <h3 class="text-xl font-bold mb-2">Great job!</h3>
         <p class="text-text-secondary mb-8">Trip details have been calculated automatically.</p>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div class="bg-bg-surface p-4 rounded-xl border border-border-default">
             <p class="text-[10px] font-black text-text-placeholder uppercase mb-1">
               Estimated Distance
@@ -592,7 +594,13 @@ const extractDetails = (description: string | null | undefined) => {
           <div class="bg-brand-primary/5 p-4 rounded-xl border border-brand-primary/10">
             <p class="text-[10px] font-black text-brand-primary uppercase mb-1">Fuel Consumed</p>
             <p class="text-2xl font-bold text-brand-primary">
-              {{ tripSummary.fuel }} <span class="text-sm font-medium">liters</span>
+              {{ tripSummary.fuel.toFixed(2) }} <span class="text-sm font-medium">L</span>
+            </p>
+          </div>
+          <div class="bg-brand-primary/10 p-4 rounded-xl border border-brand-primary/20">
+            <p class="text-[10px] font-black text-brand-primary uppercase mb-1">Fuel Cost</p>
+            <p class="text-2xl font-bold text-brand-primary">
+              {{ tripSummary.cost.toFixed(2) }} <span class="text-sm font-medium">UAH</span>
             </p>
           </div>
         </div>

@@ -20,6 +20,7 @@ interface OrderForm {
   quantity: string
   origin_address: string
   destination_address: string
+  distance: string
   isTemplate: boolean
   tariff: string
 }
@@ -41,6 +42,7 @@ const errors = reactive({
   quantity: '',
   origin_address: '',
   destination_address: '',
+  distance: '',
   tariff: '',
 })
 
@@ -57,6 +59,7 @@ const form = reactive<OrderForm>(
         quantity: '',
         origin_address: '',
         destination_address: '',
+        distance: '0',
         isTemplate: false,
         tariff: DEFAULT_TARIFF.toString(),
       },
@@ -83,6 +86,7 @@ const applyTemplate = (template: Order) => {
   form.weight = template.weight.toString()
   form.origin_address = template.origin_address || ''
   form.destination_address = template.destination_address || ''
+  form.distance = template.distance ? template.distance.toString() : '0'
   form.volume = ''
   form.quantity = ''
   form.isTemplate = true
@@ -101,6 +105,13 @@ watch(
   () => form.weight,
   () => {
     if (parseFloat(form.weight) > 0) errors.weight = ''
+  },
+)
+
+watch(
+  () => form.distance,
+  () => {
+    if (parseFloat(form.distance) > 0) errors.distance = ''
   },
 )
 
@@ -157,6 +168,11 @@ const submitOrder = async () => {
     hasError = true
   }
 
+  if (!form.distance || parseFloat(form.distance) <= 0) {
+    errors.distance = 'Distance must be a positive number'
+    hasError = true
+  }
+
   if (form.volume && parseFloat(form.volume) <= 0) {
     errors.volume = 'Volume must be a positive number'
     hasError = true
@@ -177,7 +193,7 @@ const submitOrder = async () => {
   }
 
   if (hasError) {
-    showError('Please fill all the required fields.')
+    showError('Please fill all the required fields correctly.')
     return
   }
 
@@ -190,6 +206,7 @@ const submitOrder = async () => {
       title: form.title,
       description: enrichedDescription,
       weight: parseFloat(form.weight),
+      distance: parseFloat(form.distance),
       total_amount: estimatedCost.value,
       origin_address: form.origin_address,
       destination_address: form.destination_address,
@@ -279,6 +296,15 @@ const submitOrder = async () => {
                   :error="errors.destination_address"
                 />
               </div>
+
+              <BaseInput
+                v-model="form.distance"
+                label="Estimated Distance (km) *"
+                type="number"
+                placeholder="0.0"
+                step="0.1"
+                :error="errors.distance"
+              />
 
               <div class="flex flex-col gap-1 w-full">
                 <label class="text-text-primary text-sm font-normal leading-[140%]">

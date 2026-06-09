@@ -2,7 +2,7 @@
 import { Fuel } from 'lucide-vue-next'
 
 defineProps<{
-  lastTripStats: { fuel: number; distance: number } | null
+  lastTripStats: { fuel: number; distance: number; cost: number } | null
 }>()
 </script>
 
@@ -13,13 +13,29 @@ defineProps<{
     </h2>
 
     <div class="space-y-4">
-      <div class="p-4 bg-bg-surface rounded border border-border-default">
-        <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-1">
-          Last Route Consumption
-        </p>
-        <div class="flex items-end gap-2">
-          <span class="text-2xl font-bold">{{ lastTripStats?.fuel || '--' }}</span>
-          <span class="text-text-secondary pb-1">liters</span>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="p-4 bg-bg-surface rounded border border-border-default">
+          <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-1">
+            Last Route Consumption
+          </p>
+          <div class="flex items-end gap-2">
+            <span class="text-2xl font-bold text-text-primary">{{
+              lastTripStats?.fuel || '--'
+            }}</span>
+            <span class="text-text-secondary pb-1">L</span>
+          </div>
+        </div>
+
+        <div class="p-4 bg-bg-surface rounded border border-border-default">
+          <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-1">
+            Last Route Cost
+          </p>
+          <div class="flex items-end gap-2">
+            <span class="text-2xl font-bold text-text-primary">{{
+              lastTripStats?.cost || '--'
+            }}</span>
+            <span class="text-text-secondary pb-1">UAH</span>
+          </div>
         </div>
       </div>
 
