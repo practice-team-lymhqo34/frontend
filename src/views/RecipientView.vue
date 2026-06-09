@@ -7,9 +7,9 @@ import type { Order } from '@/types/order'
 import { Loader2, AlertCircle, ChevronRight } from 'lucide-vue-next'
 import { getErrorMessage } from '@/utils/errorHandler'
 import MonthlyExpensesChart from '@/components/dashboard/MonthlyExpensesChart.vue'
-import router from '@/router'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import router from '@/router'
 
 const invoices = ref<Invoice[]>([])
 const orders = ref<Order[]>([])
@@ -19,7 +19,6 @@ const selectedMonth = ref(new Date().toISOString().slice(0, 7)) // YYYY-MM
 
 const availableMonths = computed(() => {
   const months = new Set<string>()
-  // Always include current month
   const now = new Date()
   months.add(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
 
@@ -170,6 +169,19 @@ const formatMonth = (dateString: string) => {
           <div class="flex justify-between items-center pb-4 border-b border-border-default">
             <span class="text-text-secondary">Total Expenses</span>
             <span class="font-bold text-brand-primary">₴{{ totalCost.toLocaleString() }}</span>
+          </div>
+          <div
+            class="flex justify-between items-center pb-4 border-b border-border-default"
+            v-if="filteredInvoices.some((inv) => (inv as any).total_fuel_cost > 0)"
+          >
+            <span class="text-text-secondary">Est. Logistics Fuel</span>
+            <span class="font-bold text-orange-600"
+              >₴{{
+                filteredInvoices
+                  .reduce((acc, inv) => acc + ((inv as any).total_fuel_cost || 0), 0)
+                  .toLocaleString()
+              }}</span
+            >
           </div>
           <div class="pt-2">
             <p

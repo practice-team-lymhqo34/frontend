@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import {
   Package,
   Truck,
@@ -8,8 +8,6 @@ import {
   AlertCircle,
   ChevronRight,
   Loader2,
-  Home,
-  MapPin,
 } from 'lucide-vue-next'
 import { routesApi } from '@/api/routes'
 import { ordersApi } from '@/api/orders'
@@ -26,6 +24,15 @@ const isLoadingDrivers = ref(true)
 const selectedOrder = ref<Order | null>(null)
 const selectedDriver = ref<(UserType & { vehicle?: Vehicle }) | null>(null)
 const selectedEta = ref('')
+const selectedVehicleId = ref<number | null>(null)
+
+watch(selectedDriver, (driver) => {
+  if (driver?.vehicle) {
+    selectedVehicleId.value = driver.vehicle.id
+  } else {
+    selectedVehicleId.value = null
+  }
+})
 
 const setDefaultEta = () => {
   const date = new Date()
@@ -64,14 +71,17 @@ const assignmentError = ref('')
 
 const canAssign = computed(() => {
   if (!selectedOrder.value || !selectedDriver.value?.vehicle || !selectedEta.value) return false
-  return selectedOrder.value.weight <= selectedDriver.value.vehicle.max_weight
+  return (
+    selectedOrder.value.weight <= selectedDriver.value.vehicle.max_weight &&
+    selectedVehicleId.value !== null
+  )
 })
 
 const handleAssign = async () => {
   if (
     !selectedOrder.value ||
     !selectedDriver.value ||
-    !selectedDriver.value.vehicle ||
+    !selectedVehicleId.value ||
     !selectedEta.value ||
     !canAssign.value
   )
@@ -81,7 +91,12 @@ const handleAssign = async () => {
   assignmentError.value = ''
   try {
     const isoEta = new Date(selectedEta.value).toISOString()
-    await routesApi.assignRoute(selectedOrder.value.id, selectedDriver.value.id, isoEta)
+    await routesApi.assignRoute(
+      selectedOrder.value.id,
+      selectedDriver.value.id,
+      selectedVehicleId.value,
+      isoEta,
+    )
 
     assignmentSuccess.value = true
     const assignedOrderId = selectedOrder.value.id
@@ -90,6 +105,7 @@ const handleAssign = async () => {
       unassignedOrders.value = unassignedOrders.value.filter((o) => o.id !== assignedOrderId)
       selectedOrder.value = null
       selectedDriver.value = null
+      selectedVehicleId.value = null
       setDefaultEta()
       assignmentSuccess.value = false
     }, 2000)
@@ -116,6 +132,7 @@ const handleAssign = async () => {
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <!-- Orders Column -->
       <div class="space-y-6">
         <div class="flex items-center justify-between">
           <h2 class="text-xl font-bold flex items-center gap-2">
@@ -160,9 +177,7 @@ const handleAssign = async () => {
             >
               <div class="flex justify-between items-start mb-2">
                 <h3 class="font-bold text-lg">{{ order.title }}</h3>
-                <div class="flex flex-col items-end">
-                  <span class="text-sm font-bold text-brand-primary">{{ order.weight }} kg</span>
-                </div>
+                <span class="text-sm font-bold text-brand-primary">{{ order.weight }} kg</span>
               </div>
 
               <div class="flex items-center gap-4 text-sm text-text-secondary">
@@ -181,6 +196,7 @@ const handleAssign = async () => {
         </div>
       </div>
 
+      <!-- Drivers Column -->
       <div class="space-y-6">
         <div class="flex items-center justify-between">
           <h2 class="text-xl font-bold flex items-center gap-2">
@@ -265,6 +281,7 @@ const handleAssign = async () => {
             </div>
           </div>
 
+          <!-- Assignment Form -->
           <div
             v-if="selectedDriver"
             class="mt-8 p-6 bg-bg-canvas border border-border-default rounded-lg shadow-sm"
@@ -272,6 +289,7 @@ const handleAssign = async () => {
             <h3 class="font-bold mb-4 uppercase text-[10px] tracking-wider text-text-secondary">
               Assignment Summary
             </h3>
+
             <div class="flex flex-col sm:flex-row items-center gap-4 mb-6">
               <div
                 class="w-full sm:flex-1 p-3 bg-bg-surface rounded border border-border-default text-sm"
@@ -281,17 +299,7 @@ const handleAssign = async () => {
                 >
                   Order
                 </div>
-                <div class="font-bold text-brand-primary">{{ selectedOrder.title }}</div>
-                <div class="text-[10px] text-text-secondary mt-2 flex flex-col gap-1.5">
-                  <span class="flex items-center gap-1.5 truncate" title="Origin">
-                    <Home class="w-3 h-3 text-brand-primary shrink-0" />
-                    {{ selectedOrder.origin_address }}
-                  </span>
-                  <span class="flex items-center gap-1.5 truncate" title="Destination">
-                    <MapPin class="w-3 h-3 text-brand-primary shrink-0" />
-                    {{ selectedOrder.destination_address }}
-                  </span>
-                </div>
+                <div class="font-bold text-brand-primary">{{ selectedOrder?.title }}</div>
               </div>
               <ChevronRight class="w-4 h-4 text-text-placeholder rotate-90 sm:rotate-0" />
               <div
@@ -303,27 +311,19 @@ const handleAssign = async () => {
                   Driver
                 </div>
                 <div class="font-bold text-brand-primary">{{ selectedDriver.full_name }}</div>
-                <div class="text-[10px] text-text-secondary mt-2 flex items-center gap-1.5">
-                  <Truck class="w-3 h-3 text-brand-primary shrink-0" />
-                  {{ selectedDriver.vehicle?.brand }} ({{ selectedDriver.vehicle?.license_plate }})
-                </div>
               </div>
             </div>
 
             <div class="mb-6">
               <label
                 class="block text-[10px] text-text-secondary mb-2 uppercase font-black tracking-widest"
+                >Estimated Arrival Time (ETA)</label
               >
-                Estimated Arrival Time (ETA)
-              </label>
               <input
                 v-model="selectedEta"
                 type="datetime-local"
                 class="w-full p-3 bg-bg-surface border border-border-default rounded-lg focus:border-brand-primary outline-none transition-colors font-bold text-sm"
               />
-              <p class="text-[10px] text-text-placeholder mt-2 italic">
-                * Specify when the driver is expected to reach the destination.
-              </p>
             </div>
 
             <div
@@ -356,11 +356,8 @@ const handleAssign = async () => {
                 <CheckCircle2 class="w-5 h-5" />
                 Successfully Assigned!
               </template>
-              <template v-else> Confirm Assignment </template>
+              <template v-else>Confirm Assignment</template>
             </button>
-            <p v-if="!canAssign" class="text-center text-red-500 text-xs mt-3 font-bold">
-              Weight limit exceeded. Please select another driver.
-            </p>
           </div>
         </div>
       </div>
