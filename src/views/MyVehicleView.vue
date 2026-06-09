@@ -24,6 +24,7 @@ const vehicleForm = ref<VehicleCreate>({
   max_weight: 0,
   max_volume: 0,
   fuel_consumption: 0,
+  fuel_price: 0,
   current_mileage: 0,
   maintenance_interval: 10000,
 })
@@ -77,6 +78,7 @@ const populateForm = (v: Vehicle) => {
     max_weight: v.max_weight,
     max_volume: v.max_volume,
     fuel_consumption: v.fuel_consumption,
+    fuel_price: v.fuel_price,
     current_mileage: v.current_mileage,
     maintenance_interval: v.maintenance_interval,
   }
@@ -97,6 +99,7 @@ const resetForm = () => {
     max_weight: 0,
     max_volume: 0,
     fuel_consumption: 0,
+    fuel_price: 0,
     current_mileage: 0,
     maintenance_interval: 10000,
   }
@@ -108,13 +111,14 @@ const saveVehicle = async () => {
 
   if (
     vehicleForm.value.fuel_consumption <= 0 ||
+    vehicleForm.value.fuel_price <= 0 ||
     vehicleForm.value.current_mileage < 0 ||
     vehicleForm.value.max_weight <= 0 ||
     vehicleForm.value.max_volume <= 0 ||
     vehicleForm.value.maintenance_interval <= 0
   ) {
     error.value =
-      'Please check the number format. Weight, volume, consumption and interval must be greater than 0.'
+      'Please check the number format. Weight, volume, consumption, fuel price and interval must be greater than 0.'
     return
   }
 
@@ -125,6 +129,7 @@ const saveVehicle = async () => {
     if (authStore.user?.vehicle?.id) {
       updatedVehicle = await vehiclesApi.updateVehicle(authStore.user.vehicle.id, {
         fuel_consumption: vehicleForm.value.fuel_consumption,
+        fuel_price: vehicleForm.value.fuel_price,
         current_mileage: vehicleForm.value.current_mileage,
         maintenance_interval: vehicleForm.value.maintenance_interval,
       })

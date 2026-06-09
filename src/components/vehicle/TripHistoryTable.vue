@@ -8,15 +8,12 @@ interface TripRecord {
   routeId: number
   distance: number
   fuel: number
+  cost: number
 }
 
 defineProps<{
   trips: TripRecord[]
   hasMore: boolean
-}>()
-
-defineEmits<{
-  showMore: []
 }>()
 </script>
 
@@ -36,6 +33,7 @@ defineEmits<{
             <th class="pb-3">Route ID</th>
             <th class="pb-3 text-right">Distance</th>
             <th class="pb-3 text-right">Fuel Spent</th>
+            <th class="pb-3 text-right">Fuel Cost</th>
             <th class="pb-3 text-right">Efficiency</th>
           </tr>
         </thead>
@@ -49,13 +47,25 @@ defineEmits<{
             </td>
             <td class="py-4 font-bold">#{{ trip.routeId }}</td>
             <td class="py-4 text-right font-medium">{{ trip.distance }} km</td>
+
             <td class="py-4 text-right">
-              <span class="bg-brand-primary/10 text-brand-primary px-2 py-1 rounded font-bold">
-                {{ trip.fuel }} L
+              <span class="bg-brand-primary/5 text-brand-primary px-2 py-1 rounded font-bold">
+                {{ Number(trip.fuel).toFixed(2) }} L
               </span>
             </td>
+
+            <td class="py-4 text-right">
+              <span class="bg-brand-primary/10 text-brand-primary px-2 py-1 rounded font-bold">
+                {{ Number(trip.cost).toFixed(2) }} UAH
+              </span>
+            </td>
+
             <td class="py-4 text-right font-medium text-text-secondary">
-              {{ trip.distance > 0 ? ((trip.fuel / trip.distance) * 100).toFixed(1) : '0.0' }}
+              {{
+                trip.distance > 0
+                  ? ((Number(trip.fuel) / Number(trip.distance)) * 100).toFixed(1)
+                  : '0.0'
+              }}
               <span class="text-[10px]">L/100km</span>
             </td>
           </tr>

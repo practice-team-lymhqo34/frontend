@@ -2,7 +2,6 @@
 import { ref } from 'vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
-import BaseCheckbox from '@/components/ui/BaseCheckbox.vue'
 import IconEye from '@/components/icons/IconEye.vue'
 import AuthSidebar from '@/components/auth/AuthSidebar.vue'
 import apiClient from '@/api/axios'
@@ -18,7 +17,6 @@ const { showSuccess, showError } = useToast()
 
 const email = ref('')
 const password = ref('')
-const rememberMe = ref(false)
 const showPassword = ref(false)
 const emailError = ref('')
 const passwordError = ref('')
@@ -126,15 +124,6 @@ const handleLogin = async () => {
               </button>
             </template>
           </BaseInput>
-
-          <div class="flex items-center justify-between">
-            <label class="flex items-center gap-2 cursor-pointer">
-              <BaseCheckbox v-model="rememberMe" :label="AUTH.login.rememberMe" />
-            </label>
-            <a href="#" class="text-text-link text-sm hover:underline">{{
-              AUTH.login.forgotPassword
-            }}</a>
-          </div>
 
           <BaseButton type="submit" variant="primary" :disabled="isLoading">
             {{ isLoading ? AUTH.login.submitBtnLoading : AUTH.login.submitBtn }}
