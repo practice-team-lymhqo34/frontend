@@ -6,7 +6,6 @@ defineProps<{
 
 <template>
   <div>
-    <h2 class="text-xl font-bold text-text-primary mb-4">Latest updates</h2>
     <div class="flex flex-col gap-1">
       <div
         v-for="(update, idx) in updates"

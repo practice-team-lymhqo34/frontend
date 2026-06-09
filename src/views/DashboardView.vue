@@ -1,29 +1,36 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notifications'
 import { ordersApi } from '@/api/orders'
+import { routesApi } from '@/api/routes'
 import type { Order } from '@/types/order'
+import type { Route } from '@/types/route'
 import StatCard from '@/components/dashboard/StatCard.vue'
 import LatestUpdates from '@/components/dashboard/LatestUpdates.vue'
-import UsersByCity from '@/components/dashboard/UsersByCity.vue'
-import ActiveDeliveries from '@/components/dashboard/ActiveDeliveries.vue'
+import ActiveDeliveries, { type Delivery } from '@/components/dashboard/ActiveDeliveries.vue'
 import MonthlyExpensesChart from '@/components/dashboard/MonthlyExpensesChart.vue'
 import { Loader2, Truck, AlertCircle } from 'lucide-vue-next'
 
 const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
+const router = useRouter()
 const isLoading = ref(true)
 const orders = ref<Order[]>([])
-
+const allRoutes = ref<Route[]>([])
 const fetchData = async () => {
   isLoading.value = true
   try {
-    const [ordersRes] = await Promise.all([
+    const [ordersRes, routesRes] = await Promise.all([
       ordersApi.getOrders(),
+      authStore.isManager ? routesApi.getDriverRoutes() : Promise.resolve([]),
       notificationStore.fetchNotifications(),
     ])
+    console.log('Dashboard Orders:', ordersRes)
+    console.log('Dashboard Routes:', routesRes)
     orders.value = ordersRes
+    allRoutes.value = Array.isArray(routesRes) ? routesRes : []
   } catch (error) {
     console.error('Failed to fetch dashboard data:', error)
   } finally {
@@ -33,6 +40,24 @@ const fetchData = async () => {
 
 onMounted(fetchData)
 
+const recentRoutesForManager = computed(() => {
+  if (!allRoutes.value || allRoutes.value.length === 0) return []
+
+  return allRoutes.value
+    .slice()
+    .sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0))
+    .slice(0, 3)
+    .map((r) => ({
+      id: r.id.toString(),
+      orderId: r.order_id.toString(),
+      title: r.order?.title || `Route #${r.id}`,
+      status: r.completed_at ? 'delivered' : r.started_at ? 'in_transit' : 'assigned',
+      estimatedArrival: r.eta
+        ? new Date(r.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        : 'N/A',
+    }))
+})
+
 const managerStats = computed(() => {
   const total = orders.value.length
   const inTransit = orders.value.filter((o) => o.status === 'in_progress').length
@@ -40,10 +65,10 @@ const managerStats = computed(() => {
   const pending = orders.value.filter((o) => o.status === 'pending').length
 
   return [
-    { title: 'Total Shipments', value: total.toString(), trend: 0 },
-    { title: 'In Transit', value: inTransit.toString(), trend: 0 },
-    { title: 'Delivered', value: delivered.toString(), trend: 0 },
-    { title: 'Pending', value: pending.toString(), trend: 0 },
+    { title: 'Total Shipments', value: total.toString() },
+    { title: 'In Transit', value: inTransit.toString() },
+    { title: 'Delivered', value: delivered.toString() },
+    { title: 'Pending', value: pending.toString() },
   ]
 })
 
@@ -53,18 +78,15 @@ const driverStats = computed(() => {
     {
       title: 'Current Shipments',
       value: currentRoute.toString(),
-      trend: 0,
     },
     {
       title: 'Maintenance Alerts',
       value: notificationStore.maintenanceAlerts.length.toString(),
-      trend: 0,
       color: notificationStore.hasUnreadMaintenance ? 'text-red-500 font-bold' : '',
     },
     {
       title: 'New Notifications',
       value: notificationStore.unreadNotifications.length.toString(),
-      trend: 0,
     },
   ]
 })
@@ -76,17 +98,15 @@ const clientStats = computed(() => {
   const received = orders.value.filter((o) => o.status === 'completed').length
 
   return [
-    { title: 'Active Shipments', value: active.toString(), trend: 0 },
-    { title: 'Total Received', value: received.toString(), trend: 0 },
+    { title: 'Active Shipments', value: active.toString() },
+    { title: 'Total Received', value: received.toString() },
     {
       title: 'Notifications',
       value: notificationStore.unreadNotifications.length.toString(),
-      trend: 0,
     },
     {
       title: 'Total Weight',
       value: orders.value.reduce((acc, o) => acc + o.weight, 0).toFixed(1) + 'kg',
-      trend: 0,
     },
   ]
 })
@@ -98,11 +118,33 @@ const activeDeliveries = computed(() =>
     .filter((o) => o.status === 'in_progress' || o.status === 'pending')
     .map((o) => ({
       id: o.id.toString(),
+      orderId: o.id.toString(),
       title: o.title,
       status: o.status,
       estimatedArrival: 'Calculating...',
     })),
 )
+
+const handleDeliveryClick = (delivery: Delivery) => {
+  const orderId = delivery.orderId || delivery.id
+  if (authStore.isManager) {
+    router.push(`/shipments/${orderId}`)
+  } else if (authStore.isClient) {
+    router.push(`/recipient/orders/${orderId}`)
+  } else if (authStore.isDriver) {
+    router.push('/driver/route')
+  }
+}
+
+const handleViewAll = () => {
+  if (authStore.isManager) {
+    router.push('/shipments')
+  } else if (authStore.isClient) {
+    router.push('/recipient/orders')
+  } else if (authStore.isDriver) {
+    router.push('/driver/route')
+  }
+}
 
 const latestUpdates = computed(() =>
   notificationStore.notifications.slice(0, 5).map((n) => ({
@@ -110,13 +152,6 @@ const latestUpdates = computed(() =>
     text: n.message,
   })),
 )
-
-const cities = [
-  { name: 'Kyiv', percent: '32.5%', count: '120k' },
-  { name: 'Chernivtsi', percent: '25.4%', count: '105k' },
-  { name: 'Lviv', percent: '14.5%', count: '48k' },
-  { name: 'Ternopil', percent: '13.2%', count: '45k' },
-]
 </script>
 
 <template>
@@ -136,35 +171,42 @@ const cities = [
           <StatCard v-for="stat in managerStats" :key="stat.title" v-bind="stat" />
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div class="lg:col-span-2 space-y-6">
-            <LatestUpdates :updates="latestUpdates" title="System Activity" />
-            <div class="bg-bg-canvas border border-border-default rounded-lg p-6">
-              <h2 class="text-xl font-bold text-text-primary mb-4">Quick Actions</h2>
-              <div class="grid grid-cols-2 gap-4">
+        <div class="space-y-6 mb-8">
+          <LatestUpdates :updates="latestUpdates" title="System Activity" />
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ActiveDeliveries
+              :deliveries="recentRoutesForManager"
+              title="Recent Routes"
+              @select="handleDeliveryClick"
+              @view-all="handleViewAll"
+            />
+
+            <div class="bg-bg-canvas border border-border-default rounded-lg p-6 flex flex-col">
+              <h2 class="text-xl font-bold text-text-primary mb-6">Quick Actions</h2>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
                 <router-link
                   to="/route-assignment"
-                  class="flex flex-col items-center p-4 border border-border-default rounded hover:border-primary transition-all"
+                  class="flex flex-col items-center justify-center p-6 border border-border-default rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-center group"
                 >
-                  <span class="text-sm font-bold text-text-primary">Assign Routes</span>
-                  <span class="text-xs text-text-secondary text-center mt-1"
-                    >Assign drivers to pending orders</span
+                  <span
+                    class="text-lg font-bold text-text-primary mb-2 group-hover:text-primary transition-colors"
+                    >Assign Routes</span
                   >
+                  <span class="text-sm text-text-secondary">Assign drivers to pending orders</span>
                 </router-link>
                 <router-link
                   to="/shipments"
-                  class="flex flex-col items-center p-4 border border-border-default rounded hover:border-primary transition-all"
+                  class="flex flex-col items-center justify-center p-6 border border-border-default rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-center group"
                 >
-                  <span class="text-sm font-bold text-text-primary">Monitor Shipments</span>
-                  <span class="text-xs text-text-secondary text-center mt-1"
-                    >Check current delivery statuses</span
+                  <span
+                    class="text-lg font-bold text-text-primary mb-2 group-hover:text-primary transition-colors"
+                    >Monitor Shipments</span
                   >
+                  <span class="text-sm text-text-secondary">Check current delivery statuses</span>
                 </router-link>
               </div>
             </div>
-          </div>
-          <div class="space-y-6">
-            <UsersByCity :cities="cities" />
           </div>
         </div>
       </template>
@@ -177,7 +219,12 @@ const cities = [
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div class="lg:col-span-2 space-y-6">
             <MonthlyExpensesChart :month="currentMonth" />
-            <ActiveDeliveries v-if="activeDeliveries.length > 0" :deliveries="activeDeliveries" />
+            <ActiveDeliveries
+              v-if="activeDeliveries.length > 0"
+              :deliveries="activeDeliveries"
+              @select="handleDeliveryClick"
+              @view-all="handleViewAll"
+            />
             <div
               v-else
               class="bg-bg-canvas border border-border-default rounded-lg p-10 text-center"
@@ -252,7 +299,12 @@ const cities = [
               </div>
             </div>
 
-            <ActiveDeliveries v-if="activeDeliveries.length > 0" :deliveries="activeDeliveries" />
+            <ActiveDeliveries
+              v-if="activeDeliveries.length > 0"
+              :deliveries="activeDeliveries"
+              @select="handleDeliveryClick"
+              @view-all="handleViewAll"
+            />
             <div
               v-else
               class="bg-bg-canvas border border-border-default rounded-lg p-10 text-center"

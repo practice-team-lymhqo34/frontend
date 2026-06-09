@@ -30,3 +30,11 @@ export interface VehicleUpdate {
   fuel_price?: number
   maintenance_interval?: number
 }
+
+export interface TripRecord {
+  date: string
+  routeId: number
+  distance: number
+  fuel: number
+  cost: number
+}
