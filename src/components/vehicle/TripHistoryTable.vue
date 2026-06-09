@@ -18,13 +18,15 @@ defineProps<{
 </script>
 
 <template>
-  <section class="bg-bg-canvas border border-border-default rounded-lg p-6 shadow-sm">
-    <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+  <section
+    class="bg-bg-canvas border border-border-default rounded-lg p-4 md:p-6 shadow-sm overflow-hidden"
+  >
+    <h2 class="text-lg md:text-xl font-bold mb-4 md:mb-6 flex items-center gap-2">
       <Clock class="w-5 h-5 text-brand-primary" /> Recent Trips History
     </h2>
 
-    <div v-if="trips.length > 0" class="overflow-x-auto">
-      <table class="w-full text-left">
+    <div v-if="trips.length > 0" class="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+      <table class="w-full text-left min-w-[700px]">
         <thead>
           <tr
             class="text-[10px] font-black text-text-placeholder uppercase tracking-widest border-b border-border-default"
