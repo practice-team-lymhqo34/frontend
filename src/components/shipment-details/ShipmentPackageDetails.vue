@@ -1,10 +1,21 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import type { Order, Route, User } from '@/types'
+import type { Order, Route, User, DeliveryPhoto } from '@/types'
 import ShipmentDriverSelect from '@/components/shipment-details/ShipmentDriverSelect.vue'
-import { MapPin, Weight, User as UserIcon, Banknote, Check, Edit2 } from 'lucide-vue-next'
+import {
+  MapPin,
+  Weight,
+  User as UserIcon,
+  Banknote,
+  Check,
+  Edit2,
+  Camera,
+  Loader2,
+  X,
+} from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
 import apiClient from '@/api/axios'
+import { routesApi } from '@/api/routes'
 
 const props = defineProps<{
   order: Order
@@ -20,12 +31,29 @@ const emit = defineEmits<{
 const authStore = useAuthStore()
 const isEditingAmount = ref(false)
 const newAmount = ref(props.order.total_amount)
+const photos = ref<DeliveryPhoto[]>([])
+const isFetchingPhotos = ref(false)
+const selectedFullPhoto = ref<string | null>(null)
+
+const fetchPhotos = async () => {
+  if (!props.route?.id) return
+  isFetchingPhotos.value = true
+  try {
+    photos.value = await routesApi.getRoutePhotos(props.route.id)
+  } catch (err) {
+    console.error('Failed to fetch photos:', err)
+  } finally {
+    isFetchingPhotos.value = false
+  }
+}
 
 watch(
-  () => props.order.total_amount,
-  (val) => {
-    newAmount.value = val
+  () => props.route?.id,
+  (newId) => {
+    if (newId) fetchPhotos()
+    else photos.value = []
   },
+  { immediate: true },
 )
 
 const updateAmount = async () => {
@@ -241,5 +269,67 @@ const formatDate = (date: string | null | undefined): string => {
         </div>
       </div>
     </div>
+
+    <div v-if="route" class="bg-white border border-border-default rounded-lg overflow-hidden">
+      <div class="px-6 py-4 border-b border-border-default flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <Camera class="w-4 h-4 text-brand-primary" />
+          <h3 class="text-xs font-bold tracking-wider text-text-secondary uppercase">
+            Damaged Package Photos
+          </h3>
+        </div>
+        <span
+          v-if="photos.length > 0"
+          class="text-[10px] font-bold text-text-placeholder uppercase"
+        >
+          {{ photos.length }} Photos
+        </span>
+      </div>
+
+      <div class="p-6">
+        <div v-if="isFetchingPhotos" class="flex justify-center py-4">
+          <Loader2 class="w-6 h-6 text-brand-primary animate-spin" />
+        </div>
+        <div v-else-if="photos.length > 0" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div
+            v-for="photo in photos"
+            :key="photo.id"
+            class="relative aspect-square rounded-lg overflow-hidden border border-border-default group cursor-pointer"
+            @click="selectedFullPhoto = photo.url"
+          >
+            <img
+              :src="photo.url"
+              class="w-full h-full object-cover transition-transform group-hover:scale-105"
+              alt="Package photo"
+            />
+            <div
+              class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity"
+            />
+          </div>
+        </div>
+        <div
+          v-else
+          class="flex flex-col items-center justify-center py-6 text-center text-text-placeholder"
+        >
+          <Camera class="w-8 h-8 opacity-20 mb-2" />
+          <p class="text-xs">No damaged package photos uploaded by driver</p>
+        </div>
+      </div>
+    </div>
+
+    <BaseModal :show="!!selectedFullPhoto" @cancel="selectedFullPhoto = null" title="Photo Preview">
+      <div class="flex justify-center">
+        <img
+          :src="selectedFullPhoto || ''"
+          class="max-w-full max-h-[70vh] rounded-lg shadow-xl"
+          alt="Full size photo"
+        />
+      </div>
+      <template #footer>
+        <BaseButton variant="primary" @click="selectedFullPhoto = null" class="w-full">
+          Close
+        </BaseButton>
+      </template>
+    </BaseModal>
   </div>
 </template>

@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { routesApi } from '@/api/routes'
 import { useAuthStore } from '@/stores/auth'
-import type { Route } from '@/types/route'
+import type { Route, DeliveryPhoto } from '@/types/route'
 import {
   AlertCircle,
   Camera,
@@ -11,6 +11,7 @@ import {
   Info,
   Loader2,
   Package,
+  Trash2,
   Truck,
   X,
 } from 'lucide-vue-next'
@@ -32,10 +33,52 @@ const isPhotoModalOpen = ref(false)
 const isSummaryModalOpen = ref(false)
 const selectedRouteForPhoto = ref<number | null>(null)
 const tripSummary = ref({ distance: 0, fuel: 0, cost: 0 })
+const photos = ref<DeliveryPhoto[]>([])
+const isFetchingPhotos = ref(false)
+const selectedFullPhoto = ref<string | null>(null)
+const photoToDelete = ref<number | null>(null)
+const isDeleteModalOpen = ref(false)
 
 const openPhotoUpload = (routeId: number) => {
   selectedRouteForPhoto.value = routeId
   isPhotoModalOpen.value = true
+}
+
+const fetchPhotos = async (routeId: number) => {
+  isFetchingPhotos.value = true
+  try {
+    photos.value = await routesApi.getRoutePhotos(routeId)
+  } catch (err) {
+    console.error('Failed to fetch photos:', err)
+  } finally {
+    isFetchingPhotos.value = false
+  }
+}
+
+const confirmDeletePhoto = (photoId: number) => {
+  photoToDelete.value = photoId
+  isDeleteModalOpen.value = true
+}
+
+const deletePhoto = async () => {
+  if (!photoToDelete.value) return
+  try {
+    await routesApi.deleteRoutePhoto(photoToDelete.value)
+    photos.value = photos.value.filter((p) => p.id !== photoToDelete.value)
+    showToast('Photo deleted successfully')
+  } catch (err) {
+    showToast(getErrorMessage(err), 'error')
+  } finally {
+    isDeleteModalOpen.value = false
+    photoToDelete.value = null
+  }
+}
+
+const onPhotoUploaded = async () => {
+  showToast('Photo uploaded successfully')
+  if (selectedRouteForPhoto.value) {
+    await fetchPhotos(selectedRouteForPhoto.value)
+  }
 }
 
 const showTripSummary = (distance: number, fuel: number, cost: number) => {
@@ -59,9 +102,10 @@ const showToast = (message: string, type: 'success' | 'error' = 'success') => {
 const isDetailsModalOpen = ref(false)
 const selectedRoute = ref<Route | null>(null)
 
-const openDetails = (route: Route) => {
+const openDetails = async (route: Route) => {
   selectedRoute.value = route
   isDetailsModalOpen.value = true
+  await fetchPhotos(route.id)
 }
 
 const vehicle = computed(() => authStore.user?.vehicle)
@@ -537,6 +581,38 @@ const extractDetails = (description: string | null | undefined) => {
           </div>
         </div>
 
+        <div>
+          <p class="text-[10px] font-black text-text-placeholder uppercase mb-2">
+            Damaged Package Photos
+          </p>
+          <div v-if="isFetchingPhotos" class="flex justify-center py-4">
+            <Loader2 class="w-6 h-6 text-brand-primary animate-spin" />
+          </div>
+          <div v-else-if="photos.length > 0" class="grid grid-cols-2 gap-3">
+            <div
+              v-for="photo in photos"
+              :key="photo.id"
+              class="relative rounded-lg overflow-hidden border border-border-default group cursor-pointer"
+              @click="selectedFullPhoto = photo.url"
+            >
+              <img :src="photo.url" class="w-full h-32 object-cover" alt="Package photo" />
+              <div
+                class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+              >
+                <button
+                  @click.stop="confirmDeletePhoto(photo.id)"
+                  class="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                >
+                  <Trash2 class="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+          <div v-else class="p-4 bg-bg-surface border border-dashed rounded-lg text-center">
+            <p class="text-xs text-text-secondary">No photos uploaded yet</p>
+          </div>
+        </div>
+
         <div
           class="flex items-center gap-3 p-4 bg-brand-primary/5 rounded-lg border border-brand-primary/10"
         >
@@ -563,9 +639,24 @@ const extractDetails = (description: string | null | undefined) => {
       <BaseImageUpload
         v-if="selectedRouteForPhoto"
         :route-id="selectedRouteForPhoto"
-        @uploaded="showToast('Photo uploaded successfully')"
+        @uploaded="onPhotoUploaded"
         @close="isPhotoModalOpen = false"
       />
+    </BaseModal>
+
+    <BaseModal :show="!!selectedFullPhoto" @cancel="selectedFullPhoto = null" title="Photo Preview">
+      <div class="flex justify-center">
+        <img
+          :src="selectedFullPhoto || ''"
+          class="max-w-full max-h-[70vh] rounded-lg shadow-xl"
+          alt="Full size photo"
+        />
+      </div>
+      <template #footer>
+        <BaseButton variant="primary" @click="selectedFullPhoto = null" class="w-full">
+          Close
+        </BaseButton>
+      </template>
     </BaseModal>
 
     <BaseModal
@@ -597,7 +688,7 @@ const extractDetails = (description: string | null | undefined) => {
               {{ tripSummary.fuel.toFixed(2) }} <span class="text-sm font-medium">L</span>
             </p>
           </div>
-          <div class="bg-brand-primary/10 p-4 rounded-xl border border-brand-primary/20">
+          <div class="bg-brand-primary/10 p-4 rounded-xl border border-border-default">
             <p class="text-[10px] font-black text-brand-primary uppercase mb-1">Fuel Cost</p>
             <p class="text-2xl font-bold text-brand-primary">
               {{ tripSummary.cost.toFixed(2) }} <span class="text-sm font-medium">UAH</span>
@@ -611,6 +702,16 @@ const extractDetails = (description: string | null | undefined) => {
         </BaseButton>
       </template>
     </BaseModal>
+
+    <BaseModal
+      :show="isDeleteModalOpen"
+      title="Delete Photo"
+      message="Are you sure you want to delete this photo? This action cannot be undone."
+      confirm-text="Delete"
+      variant="danger"
+      @confirm="deletePhoto"
+      @cancel="isDeleteModalOpen = false"
+    />
 
     <Transition
       enter-active-class="transform transition ease-out duration-300"

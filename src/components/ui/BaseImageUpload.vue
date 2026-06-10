@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Camera, X, Upload } from 'lucide-vue-next'
+import { routesApi } from '@/api/routes'
 
-// const props = defineProps<{
-//   routeId: number
-// }>()
+const props = defineProps<{
+  routeId: number
+}>()
 
 const emit = defineEmits<{
-  uploaded: [file: File]
+  uploaded: []
   close: []
 }>()
 
@@ -22,8 +23,8 @@ const handleFile = (file: File): void => {
     error.value = 'Only image file types are allowed'
     return
   }
-  if (file.size > 5 * 1024 * 1024) {
-    error.value = 'File size must be under 5MB'
+  if (file.size > 10 * 1024 * 1024) {
+    error.value = 'File size must be under 10MB'
     return
   }
   error.value = ''
@@ -51,12 +52,8 @@ const handleUpload = async () => {
   if (!selectedFile.value) return
   isUploading.value = true
   try {
-    // TODO: замінити на реальний apiClient коли бекенд готовий
-    // const formData = new FormData()
-    // formData.append('file', selectedFile.value)
-    // await apiClient.post(`/routes/${props.routeId}/photos`, formData)
-    await new Promise((resolve) => setTimeout(resolve, 1000)) // mock
-    emit('uploaded', selectedFile.value)
+    await routesApi.uploadRoutePhoto(props.routeId, selectedFile.value)
+    emit('uploaded')
     emit('close')
   } catch {
     error.value = 'Upload failed. Please try again.'
@@ -83,13 +80,14 @@ const handleUpload = async () => {
     >
       <Camera class="w-10 h-10 text-text-placeholder mx-auto mb-3" />
       <p class="text-sm font-bold text-text-primary">Drop photo here or click to upload</p>
-      <p class="text-xs text-text-secondary mt-1">PNG, JPG up to 5MB</p>
+      <p class="text-xs text-text-secondary mt-1">PNG, JPG, WEBP up to 10MB</p>
       <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onFileInput" />
     </div>
 
     <div v-else class="relative rounded-xl overflow-hidden border border-border-default">
       <img :src="preview" class="w-full max-h-64 object-cover" alt="img" />
       <button
+        v-if="!isUploading"
         @click="clearFile"
         class="absolute top-2 right-2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow hover:bg-bg-surface"
       >

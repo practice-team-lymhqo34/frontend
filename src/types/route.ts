@@ -30,6 +30,15 @@ export interface RouteStatus {
   created_at: string
 }
 
+export interface DeliveryPhoto {
+  id: number
+  route_id: number
+  key: string
+  url: string
+  description?: string
+  taken: string
+}
+
 export interface RouteOut {
   id: number
   order_id: number
