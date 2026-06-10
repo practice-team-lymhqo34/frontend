@@ -1,5 +1,5 @@
 import apiClient from './axios'
-import type { Route, RouteStatus } from '@/types/route'
+import type { Route, RouteStatus, DeliveryPhoto } from '@/types/route'
 import type { User } from '@/types/user'
 
 export interface RouteStatusCreate {
@@ -47,5 +47,39 @@ export const routesApi = {
       eta,
     })
     return response.data
+  },
+
+  async getRoutePhotos(routeId: number): Promise<DeliveryPhoto[]> {
+    const response = await apiClient.get<DeliveryPhoto[]>(`/dashboard/routes/${routeId}/photos`)
+    return (response.data || []).map((photo) => {
+      // Since backend schema might not include URL, we build it here.
+      // The bucket is public, so we can use the direct link.
+      const baseUrl = 'http://localhost:8333/public-images'
+      const url = photo.url || (photo.key ? `${baseUrl}/${photo.key}` : '')
+
+      return {
+        ...photo,
+        url: (url || '')
+          .replace('http://seaweedfs:8333', 'http://localhost:8333')
+          .replace('http://s3:9000', 'http://localhost:9000'),
+      }
+    })
+  },
+
+  async uploadRoutePhoto(routeId: number, file: File, description?: string): Promise<void> {
+    const formData = new FormData()
+    formData.append('file', file)
+    if (description) {
+      formData.append('description', description)
+    }
+    await apiClient.post(`/dashboard/routes/${routeId}/photos`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+  },
+
+  async deleteRoutePhoto(photoId: number): Promise<void> {
+    await apiClient.delete(`/dashboard/routes/photos/${photoId}`)
   },
 }
