@@ -1,17 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import LoginView from '@/views/LoginView.vue'
-import RegisterView from '@/views/RegisterView.vue'
-import DriverLayout from '@/layouts/DriverLayout.vue'
-import TodaysRouteView from '@/views/TodaysRouteView.vue'
-import RecipientLayout from '@/layouts/RecipientLayout.vue'
-import CreateDelivery from '@/views/CreateDelivery.vue'
-import RecipientOrderDetailsView from '@/views/RecipientOrderDetailsView.vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
-import DashboardView from '@/views/DashboardView.vue'
-import ShipmentsListView from '@/views/ShipmentsListView.vue'
 import { useAuthStore } from '../stores/auth'
-import ShipmentDetailsView from '@/views/ShipmentDetailsView.vue'
-import NotFoundView from '@/views/NotFoundView.vue'
+import RecipientLayout from '@/layouts/RecipientLayout.vue'
+import DriverLayout from '@/layouts/DriverLayout.vue'
+import LoginView from '@/views/LoginView.vue'
+import DashboardView from '@/views/DashboardView.vue'
+import RecipientView from '@/views/RecipientView.vue'
+import TodaysRouteView from '@/views/TodaysRouteView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -28,7 +23,7 @@ const router = createRouter({
     {
       path: '/register',
       name: 'register',
-      component: RegisterView,
+      component: () => import('@/views/RegisterView.vue'),
     },
     {
       path: '/',
@@ -42,17 +37,17 @@ const router = createRouter({
         {
           path: 'shipments',
           name: 'shipments',
-          component: ShipmentsListView,
+          component: () => import('@/views/ShipmentsListView.vue'),
         },
         {
           path: 'shipments/:id',
           name: 'shipment-details',
-          component: ShipmentDetailsView,
+          component: () => import('@/views/ShipmentDetailsView.vue'),
         },
         {
           path: 'users',
           name: 'users',
-          component: () => import('../views/UsersView.vue'),
+          component: () => import('@/views/UsersView.vue'),
         },
         {
           path: 'route-assignment',
@@ -62,7 +57,7 @@ const router = createRouter({
         {
           path: 'settings',
           name: 'settings',
-          component: () => import('../views/SettingsView.vue'),
+          component: () => import('@/views/SettingsView.vue'),
         },
       ],
     },
@@ -73,32 +68,32 @@ const router = createRouter({
         {
           path: 'orders',
           name: 'recipient-orders',
-          component: () => import('../views/RecipientOrdersView.vue'),
+          component: () => import('@/views/RecipientOrdersView.vue'),
         },
         {
           path: 'orders/:id',
           name: 'recipient-order-details',
-          component: RecipientOrderDetailsView,
+          component: () => import('@/views/RecipientOrderDetailsView.vue'),
         },
         {
           path: 'active',
           name: 'recipient-active',
-          component: () => import('../views/RecipientActiveView.vue'),
+          component: () => import('@/views/RecipientActiveView.vue'),
         },
         {
           path: 'billing',
           name: 'recipient-billing',
-          component: () => import('../views/RecipientView.vue'),
+          component: RecipientView,
         },
         {
           path: 'delivery/new',
           name: 'create-delivery',
-          component: CreateDelivery,
+          component: () => import('@/views/CreateDelivery.vue'),
         },
         {
           path: 'settings',
           name: 'recipient-settings',
-          component: () => import('../views/SettingsView.vue'),
+          component: () => import('@/views/SettingsView.vue'),
         },
       ],
     },
@@ -119,14 +114,14 @@ const router = createRouter({
         {
           path: 'settings',
           name: 'driver-settings',
-          component: () => import('../views/SettingsView.vue'),
+          component: () => import('@/views/SettingsView.vue'),
         },
       ],
     },
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
-      component: NotFoundView,
+      component: () => import('@/views/NotFoundView.vue'),
     },
   ],
 })

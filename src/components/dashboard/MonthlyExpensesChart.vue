@@ -2,7 +2,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import VueApexCharts from 'vue3-apexcharts'
 import { getMonthlyExpenses } from '@/api/statistics'
-import type { MonthlyExpensePoint } from '@/types/statistics'
+import type { MonthlyExpensePoint } from '@/types'
 import { Loader2 } from 'lucide-vue-next'
 import type { ApexOptions } from 'apexcharts'
 
@@ -168,7 +168,7 @@ const isEmpty = computed(() => !loading.value && expensesData.value.length === 0
         <svg
           class="w-12 h-12 text-text-placeholder"
           fill="none"
-          viewBox="0 0 24 a24"
+          viewBox="0 0 24 24"
           stroke="currentColor"
         >
           <path
