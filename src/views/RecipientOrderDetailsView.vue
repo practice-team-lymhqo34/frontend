@@ -2,9 +2,9 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, CheckCircle2, Navigation, Trash2 } from 'lucide-vue-next'
-import type { Order, Route, RouteStatus, User } from '@/types'
+import type { Order, Route, User } from '@/types'
 import { ordersApi } from '@/api/orders'
-import apiClient from '@/api/axios'
+import { routesApi } from '@/api/routes'
 import ShipmentPackageDetails from '@/components/shipment-details/ShipmentPackageDetails.vue'
 import ShipmentStatusTimeline from '@/components/shipment-details/ShipmentStatusTimeline.vue'
 import ShipmentETACard from '@/components/shipment-details/ShipmentETACard.vue'
@@ -47,36 +47,23 @@ const fetchData = async () => {
     order.value = await ordersApi.getOrder(orderId)
 
     try {
-      const routeRes = await apiClient.get('/dashboard/routes', {
-        params: { order_id: orderId },
-      })
-      if (routeRes.data && routeRes.data.length > 0) {
-        const routeData = routeRes.data[0]
+      const routes = await routesApi.getDriverRoutes()
+      const routeData = routes.find((r) => r.order_id === orderId)
+
+      if (routeData) {
         try {
-          const statusesRes = await apiClient.get(`/dashboard/routes/${routeData.id}/statuses`)
-          routeData.statuses = statusesRes.data
+          const statuses = await routesApi.getRouteStatuses(routeData.id)
+          routeData.statuses = statuses
         } catch (err) {
           console.warn('Could not fetch route statuses', err)
-        }
-
-        // MOCK: Add delay info if in_transit for testing purposes
-        const transitStatus = routeData.statuses?.find(
-          (s: RouteStatus) => s.status === 'in_transit',
-        )
-        if (transitStatus) {
-          routeData.is_delayed = true
-          routeData.delay_minutes = 75
-          const originalEta = new Date(routeData.eta)
-          originalEta.setMinutes(originalEta.getMinutes() - 75)
-          routeData.original_eta = originalEta.toISOString()
         }
 
         route.value = routeData
 
         if (routeData.driver_id) {
           try {
-            const driversRes = await apiClient.get('/dashboard/drivers')
-            const driver = driversRes.data.find((d: User) => d.id === routeData.driver_id)
+            const drivers = await routesApi.getDrivers()
+            const driver = drivers.find((d) => d.id === routeData.driver_id)
             if (driver) {
               assignedDriver.value = driver
             }

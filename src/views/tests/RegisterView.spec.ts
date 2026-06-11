@@ -1,9 +1,7 @@
-// src/views/RegisterView.spec.ts
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 
-// --- Mocks for child components ---
 vi.mock('@/components/ui/BaseInput.vue', () => ({
   default: {
     name: 'BaseInput',

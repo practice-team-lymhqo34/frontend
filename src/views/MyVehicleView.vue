@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 import { Truck, Loader2, AlertCircle } from 'lucide-vue-next'
 import { vehiclesApi } from '@/api/vehicles'
 import { routesApi } from '@/api/routes'
-import type { VehicleCreate, Vehicle } from '@/types/vehicle'
+import type { VehicleCreate, Vehicle, TripRecord } from '@/types'
 import { getErrorMessage } from '@/utils/errorHandler'
 import { useNotificationStore } from '@/stores/notifications'
 import BaseModal from '@/components/ui/BaseModal.vue'
@@ -12,7 +12,6 @@ import VehicleSpecsForm from '@/components/vehicle/VehicleSpecsForm.vue'
 import MaintenanceAlerts from '@/components/vehicle/MaintenanceAlerts.vue'
 import FuelInsights from '@/components/vehicle/FuelInsights.vue'
 import TripHistoryTable from '@/components/vehicle/TripHistoryTable.vue'
-import type { TripRecord } from '@/types/vehicle'
 
 const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
@@ -57,14 +56,13 @@ const fetchTripHistory = async () => {
   isHistoryLoading.value = true
   try {
     const routes = await routesApi.getDriverRoutes()
-    console.log('Fetched routes for history:', routes)
 
     dbTripHistory.value = routes
       .filter((r) => r.completed_at || r.started_at || r.eta)
       .map((r) => {
         const distance = r.order?.distance || 0
-        const fuelConsumption = vehicleForm.value.fuel_consumption || 10
-        const fuelPrice = vehicleForm.value.fuel_price || 50
+        const fuelConsumption = vehicleForm.value.fuel_consumption || 0
+        const fuelPrice = vehicleForm.value.fuel_price || 0
 
         const calculatedCost =
           r.fuel_cost !== null && r.fuel_cost !== undefined
@@ -75,13 +73,11 @@ const fetchTripHistory = async () => {
           date: r.completed_at || r.started_at || r.eta,
           routeId: r.id,
           distance: distance,
-          fuel: Number(((distance * fuelConsumption) / 100).toFixed(2)),
+          fuel: fuelConsumption > 0 ? Number(((distance * fuelConsumption) / 100).toFixed(2)) : 0,
           cost: calculatedCost,
         }
       })
       .sort((a, b) => new Date(b.date!).getTime() - new Date(a.date!).getTime())
-
-    console.log('Processed trip history:', dbTripHistory.value)
   } catch (err) {
     console.error('Failed to fetch trip history:', err)
   } finally {
@@ -183,6 +179,10 @@ const saveVehicle = async () => {
     }
 
     successMessage.value = 'Vehicle data saved successfully!'
+
+    // Оновлюємо сповіщення, щоб побачити нові Maintenance Alerts відразу
+    await notificationStore.fetchNotifications()
+
     setTimeout(() => {
       successMessage.value = ''
     }, 3000)
@@ -257,8 +257,8 @@ const deleteVehicle = async () => {
         <FuelInsights :last-trip-stats="authStore.lastTripStats" />
 
         <MaintenanceAlerts
-          :current-mileage="vehicleForm.current_mileage"
-          :maintenance-interval="vehicleForm.maintenance_interval"
+          :current-mileage="Number(vehicleForm.current_mileage) || 0"
+          :maintenance-interval="Number(vehicleForm.maintenance_interval) || 10000"
         />
       </div>
 

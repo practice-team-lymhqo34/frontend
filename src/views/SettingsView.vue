@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
-import { User, Mail, Phone, Shield, Truck, LogOut, ChevronRight } from 'lucide-vue-next'
+import { User, Mail, Phone, Truck, LogOut, ChevronRight } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
@@ -56,16 +56,6 @@ const handleLogout = () => {
               </div>
               <ChevronRight class="w-4 h-4 text-text-placeholder group-hover:text-brand-primary" />
             </div>
-
-            <div
-              class="flex items-center justify-between p-3 rounded-md hover:bg-bg-surface cursor-pointer transition-colors group"
-            >
-              <div class="flex items-center gap-3">
-                <Shield class="w-4 h-4 text-text-secondary" />
-                <span class="text-sm font-medium">Privacy Settings</span>
-              </div>
-              <ChevronRight class="w-4 h-4 text-text-placeholder" />
-            </div>
           </div>
 
           <div class="mt-8 pt-6 border-t border-border-default">
@@ -85,7 +75,6 @@ const handleLogout = () => {
             <h3 class="text-lg font-bold flex items-center gap-2">
               <User class="w-5 h-5 text-brand-primary" /> Profile Details
             </h3>
-            <BaseButton variant="secondary" size="sm" disabled>Edit Profile</BaseButton>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

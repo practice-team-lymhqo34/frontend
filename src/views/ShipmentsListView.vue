@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import apiClient from '@/api/axios'
+import { ref, onMounted, computed } from 'vue'
+import { ordersApi } from '@/api/orders'
 import type { Order } from '@/types'
 import { Package, Search, Loader2 } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
@@ -11,13 +11,14 @@ const router = useRouter()
 const orders = ref<Order[]>([])
 const isLoading = ref(true)
 const error = ref('')
+const searchQuery = ref('')
 
 const fetchOrders = async () => {
   isLoading.value = true
   error.value = ''
   try {
-    const response = await apiClient.get('/orders/')
-    orders.value = response.data
+    const data = await ordersApi.getOrders()
+    orders.value = data
   } catch (err: unknown) {
     console.error('Failed to fetch shipments:', err)
     error.value = getErrorMessage(err)
@@ -27,14 +28,12 @@ const fetchOrders = async () => {
 }
 
 const getStatusClasses = (status: string) => {
-  switch (status) {
-    case 'PENDING':
+  const s = status.toLowerCase()
+  switch (s) {
     case 'pending':
       return 'bg-orange-100 text-orange-600'
-    case 'IN_PROGRESS':
     case 'in_progress':
       return 'bg-blue-100 text-blue-600'
-    case 'COMPLETED':
     case 'completed':
       return 'bg-green-100 text-green-600'
     default:
@@ -43,6 +42,18 @@ const getStatusClasses = (status: string) => {
 }
 
 onMounted(fetchOrders)
+
+const filteredOrders = computed(() => {
+  const query = searchQuery.value.toLowerCase().trim()
+  if (!query) return orders.value
+
+  return orders.value.filter(
+    (o) =>
+      o.title.toLowerCase().includes(query) ||
+      o.id.toString().includes(query) ||
+      (o.description && o.description.toLowerCase().includes(query)),
+  )
+})
 </script>
 
 <template>
@@ -86,8 +97,9 @@ onMounted(fetchOrders)
         <div class="relative flex-1">
           <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-placeholder" />
           <input
+            v-model="searchQuery"
             type="text"
-            placeholder="Search shipments by title, ID or client..."
+            placeholder="Search shipments by title, ID or details..."
             class="w-full pl-10 pr-4 py-2 bg-white border border-border-default rounded-lg outline-none focus:border-brand-primary transition-colors"
           />
         </div>
@@ -117,7 +129,7 @@ onMounted(fetchOrders)
         </thead>
         <tbody class="divide-y divide-border-default">
           <tr
-            v-for="order in orders"
+            v-for="order in filteredOrders"
             :key="order.id"
             class="hover:bg-blue-50/30 transition-colors cursor-pointer group"
             @click="router.push(`/shipments/${order.id}`)"
@@ -165,6 +177,29 @@ onMounted(fetchOrders)
           </tr>
         </tbody>
       </table>
+
+      <div
+        v-if="!isLoading && orders.length > 0 && filteredOrders.length === 0"
+        class="p-20 text-center flex flex-col items-center justify-center gap-4"
+      >
+        <div
+          class="w-16 h-16 bg-bg-surface rounded-full flex items-center justify-center border border-border-default"
+        >
+          <Search class="w-8 h-8 text-text-placeholder" />
+        </div>
+        <div>
+          <p class="text-lg font-bold text-text-primary">No matching shipments</p>
+          <p class="text-sm text-text-secondary">
+            We couldn't find anything matching "{{ searchQuery }}"
+          </p>
+        </div>
+        <button
+          @click="searchQuery = ''"
+          class="text-sm font-bold text-brand-primary hover:underline"
+        >
+          Clear search
+        </button>
+      </div>
     </div>
   </div>
 </template>

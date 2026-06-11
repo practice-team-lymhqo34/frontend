@@ -2,15 +2,15 @@
 import { ref, onMounted, computed } from 'vue'
 import { invoicesApi } from '@/api/invoices'
 import { ordersApi } from '@/api/orders'
-import type { Invoice } from '@/types/invoice'
-import type { Order } from '@/types/order'
+import type { Invoice, Order } from '@/types'
 import { Loader2, AlertCircle, ChevronRight } from 'lucide-vue-next'
 import { getErrorMessage } from '@/utils/errorHandler'
 import MonthlyExpensesChart from '@/components/dashboard/MonthlyExpensesChart.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
-import router from '@/router'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const invoices = ref<Invoice[]>([])
 const orders = ref<Order[]>([])
 const isLoading = ref(true)
@@ -100,7 +100,7 @@ onMounted(() => {
 })
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('uk-UA', {
+  return new Date(dateString).toLocaleDateString('en-US', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -108,7 +108,7 @@ const formatDate = (dateString: string) => {
 }
 
 const formatMonth = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('uk-UA', {
+  return new Date(dateString).toLocaleDateString('en-US', {
     month: 'long',
     year: 'numeric',
   })
@@ -132,7 +132,7 @@ const formatMonth = (dateString: string) => {
           class="bg-transparent border-none text-sm font-bold focus:ring-0 cursor-pointer"
         >
           <option v-for="month in availableMonths" :key="month" :value="month">
-            {{ new Date(month).toLocaleDateString('uk-UA', { month: 'long', year: 'numeric' }) }}
+            {{ new Date(month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) }}
           </option>
         </select>
       </div>
@@ -308,17 +308,15 @@ const formatMonth = (dateString: string) => {
     </div>
 
     <BaseModal :show="showDetailsModal" @cancel="showDetailsModal = false" title="Invoice Details">
-      <template>
-        <div class="flex flex-col">
-          <h3 class="text-xl font-bold text-text-primary">
-            Invoice Details #INV-{{ String(selectedInvoice?.id).padStart(3, '0') }}
-          </h3>
-          <p class="text-sm text-text-secondary">
-            Shipment History for
-            {{ selectedInvoice ? formatMonth(selectedInvoice.billing_month) : '' }}
-          </p>
-        </div>
-      </template>
+      <div class="flex flex-col">
+        <h3 class="text-xl font-bold text-text-primary">
+          Invoice Details #INV-{{ String(selectedInvoice?.id).padStart(3, '0') }}
+        </h3>
+        <p class="text-sm text-text-secondary">
+          Shipment History for
+          {{ selectedInvoice ? formatMonth(selectedInvoice.billing_month) : '' }}
+        </p>
+      </div>
 
       <div class="mt-4">
         <div v-if="isDetailsLoading" class="flex justify-center py-10">
