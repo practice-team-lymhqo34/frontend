@@ -29,13 +29,6 @@ and device:
 
 ![Driver Console](./docs/driver-mobile.png)
 
-## Performance Optimization (Lighthouse)
-
-Continuous UI/UX improvements and strict TypeScript checks ensure a
-high-performing application:
-
-![Lighthouse Score](./docs/lighthouse.png)
-
 ## Tech Stack
 
 - Vue 3 + Vite
@@ -65,7 +58,7 @@ All stores are strictly typed using TypeScript (`Route`, `Order`, `Vehicle`).
 ### Installation
 
 ```bash
-git clone [https://github.com/practice-team-lymhqo34/frontend.git](https://github.com/practice-team-lymhqo34/frontend.git)
+git clone https://github.com/practice-team-lymhqo34/frontend.git
 cd frontend
 npm install
 ```
@@ -82,3 +75,17 @@ npm run dev
 npm run build
 npm run preview
 ```
+
+### Running with Docker
+
+The easiest way to launch the LogiFlow frontend along with its entire
+ecosystem (Backend, S3 Storage) is using Docker Compose.
+
+Run the following command in the root directory:
+
+```bash
+docker-compose up -d --build
+```
+
+The frontend application will be compiled, served via Nginx, and available at
+`http://localhost:8080` (or your specifically configured port).
