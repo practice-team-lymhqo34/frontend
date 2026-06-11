@@ -51,7 +51,6 @@ const validateForm = () => {
 
 const redirectUser = async () => {
   const userRole = authStore.userRole
-  console.log('Redirecting user based on role:', userRole)
   if (userRole === 'manager') {
     await router.push('/dashboard')
   } else if (userRole === 'driver') {
@@ -67,7 +66,6 @@ const handleLogin = async () => {
   if (!validateForm()) return
 
   isLoading.value = true
-  console.log('Attempting login for:', email.value)
 
   try {
     const response = await apiClient.post('/auth/login', {
@@ -75,7 +73,6 @@ const handleLogin = async () => {
       password: password.value,
     })
 
-    console.log('Login successful, setting user in store')
     authStore.setUser(response.data)
     showSuccess(AUTH.login.success)
 

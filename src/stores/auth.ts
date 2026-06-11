@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Vehicle } from '@/types/vehicle'
+import type { Vehicle } from '@/types'
 
 interface User {
   id: number

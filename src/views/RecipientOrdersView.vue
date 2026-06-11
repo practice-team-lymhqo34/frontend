@@ -1,19 +1,22 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import apiClient from '@/api/axios'
+import { ref, onMounted, computed } from 'vue'
 import { ordersApi } from '@/api/orders'
+import { routesApi } from '@/api/routes'
 import type { Order, Route } from '@/types'
 import { Package, Search, Plus, ChevronRight, Loader2 } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseEmptyState from '@/components/ui/BaseEmptyState.vue'
 import { getErrorMessage } from '@/utils/errorHandler'
+import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
+const { showError } = useToast()
 const orders = ref<Order[]>([])
 const routes = ref<Route[]>([])
 const isLoading = ref(true)
 const error = ref('')
+const searchQuery = ref('')
 
 const showCancelModal = ref(false)
 const showConfirmModal = ref(false)
@@ -50,7 +53,7 @@ const handleCancel = async () => {
     await fetchOrders()
   } catch (err) {
     console.error('Failed to cancel order:', err)
-    alert(getErrorMessage(err))
+    showError(getErrorMessage(err))
   }
 }
 
@@ -64,7 +67,7 @@ const handleRefuse = async () => {
     await fetchOrders()
   } catch (err) {
     console.error('Failed to refuse order:', err)
-    alert(getErrorMessage(err))
+    showError(getErrorMessage(err))
   }
 }
 
@@ -80,7 +83,7 @@ const handleConfirmReceipt = async () => {
     console.error('Failed to confirm receipt:', err)
     showConfirmModal.value = false
     orderToConfirm.value = null
-    alert(getErrorMessage(err))
+    showError(getErrorMessage(err))
   }
 }
 
@@ -89,11 +92,11 @@ const fetchOrders = async () => {
   error.value = ''
   try {
     const [ordersRes, routesRes] = await Promise.all([
-      apiClient.get('/orders/'),
-      apiClient.get('/dashboard/routes'),
+      ordersApi.getOrders(),
+      routesApi.getDriverRoutes(),
     ])
-    orders.value = ordersRes.data
-    routes.value = routesRes.data
+    orders.value = ordersRes
+    routes.value = routesRes
   } catch (err: unknown) {
     console.error('Failed to fetch orders or routes:', err)
     error.value = getErrorMessage(err)
@@ -128,6 +131,19 @@ const getStatusClasses = (status: string) => {
 }
 
 onMounted(fetchOrders)
+
+const filteredOrders = computed(() => {
+  const query = searchQuery.value.toLowerCase().trim()
+  if (!query) return orders.value
+
+  return orders.value.filter(
+    (o) =>
+      o.title.toLowerCase().includes(query) ||
+      o.id.toString().includes(query) ||
+      (o.origin_address && o.origin_address.toLowerCase().includes(query)) ||
+      (o.destination_address && o.destination_address.toLowerCase().includes(query)),
+  )
+})
 </script>
 
 <template>
@@ -181,8 +197,9 @@ onMounted(fetchOrders)
         <div class="relative flex-1">
           <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-placeholder" />
           <input
+            v-model="searchQuery"
             type="text"
-            placeholder="Search by title..."
+            placeholder="Search by title, address or ID..."
             class="w-full pl-10 pr-4 py-2 bg-bg-surface border border-border-default rounded outline-none focus:border-brand-primary transition-colors text-sm"
           />
         </div>
@@ -216,7 +233,7 @@ onMounted(fetchOrders)
           </thead>
           <tbody class="divide-y divide-border-default">
             <tr
-              v-for="order in orders"
+              v-for="order in filteredOrders"
               :key="order.id"
               class="hover:bg-bg-surface transition-colors cursor-pointer group"
               @click="router.push(`/recipient/orders/${order.id}`)"
@@ -292,6 +309,29 @@ onMounted(fetchOrders)
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <div
+        v-if="!isLoading && orders.length > 0 && filteredOrders.length === 0"
+        class="p-20 text-center flex flex-col items-center justify-center gap-4"
+      >
+        <div
+          class="w-16 h-16 bg-bg-surface rounded-full flex items-center justify-center border border-border-default"
+        >
+          <Search class="w-8 h-8 text-text-placeholder" />
+        </div>
+        <div>
+          <p class="text-lg font-bold text-text-primary">No matching orders</p>
+          <p class="text-sm text-text-secondary">
+            We couldn't find anything matching "{{ searchQuery }}"
+          </p>
+        </div>
+        <button
+          @click="searchQuery = ''"
+          class="text-sm font-bold text-brand-primary hover:underline"
+        >
+          Clear search
+        </button>
       </div>
 
       <BaseModal

@@ -1,6 +1,5 @@
 import apiClient from './axios'
-import type { Order } from '@/types/order'
-import type { Route } from '@/types'
+import type { Order, Route } from '@/types'
 
 export const ordersApi = {
   async getOrders(): Promise<Order[]> {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Fuel, Gauge, Wrench, Loader2, Save, Trash2, AlertCircle } from 'lucide-vue-next'
 import BaseButton from '@/components/ui/BaseButton.vue'
-import type { VehicleCreate } from '@/types/vehicle'
+import type { VehicleCreate } from '@/types'
 
 const vehicleForm = defineModel<VehicleCreate>('vehicleForm', { required: true })
 
@@ -181,7 +181,8 @@ const emit = defineEmits<{
             class="w-full px-4 py-3 bg-bg-surface border border-border-default rounded focus:outline-none focus:border-brand-primary"
           />
           <p class="text-xs text-text-secondary mt-1">
-            The system will remind you of maintenance when the mileage reaches this value.
+            The system will remind you of maintenance every time the mileage increases by this
+            interval.
           </p>
         </div>
       </div>

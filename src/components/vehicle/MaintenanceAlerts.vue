@@ -1,14 +1,33 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { Wrench, AlertCircle } from 'lucide-vue-next'
 import { useNotificationStore } from '@/stores/notifications'
 import { formatAlertDate } from '@/utils/date'
 
-defineProps<{
+const props = defineProps<{
   currentMileage: number
   maintenanceInterval: number
 }>()
 
 const notificationStore = useNotificationStore()
+
+const mileageInfo = computed(() => {
+  const current = Number(props.currentMileage) || 0
+  const interval = Number(props.maintenanceInterval) || 10000
+
+  if (interval <= 0) return { left: 0, progress: 0, isWarning: false, isOverdue: false }
+
+  const kmSinceLast = current % interval
+  const kmLeft = interval - kmSinceLast
+  const progress = (kmSinceLast / interval) * 100
+
+  return {
+    left: kmLeft,
+    progress: progress,
+    isWarning: progress >= 90,
+    isOverdue: progress >= 98,
+  }
+})
 </script>
 
 <template>
@@ -21,16 +40,14 @@ const notificationStore = useNotificationStore()
       <div>
         <div class="flex items-center justify-between mb-2">
           <p class="text-text-secondary text-xs font-bold uppercase tracking-wider">
-            Mileage to Maintenance
+            Mileage to Next Maintenance
           </p>
           <span
             class="text-sm font-bold"
-            :class="currentMileage >= maintenanceInterval ? 'text-red-600' : 'text-brand-primary'"
+            :class="mileageInfo.isOverdue ? 'text-red-600' : 'text-brand-primary'"
           >
-            <template v-if="currentMileage >= maintenanceInterval">
-              Maintenance Overdue! ({{ currentMileage - maintenanceInterval }} km)
-            </template>
-            <template v-else> {{ maintenanceInterval - currentMileage }} km left </template>
+            <template v-if="mileageInfo.isOverdue"> Maintenance Due Now! </template>
+            <template v-else> {{ mileageInfo.left }} km left </template>
           </span>
         </div>
 
@@ -40,17 +57,20 @@ const notificationStore = useNotificationStore()
           <div
             class="h-full transition-all duration-500"
             :style="{
-              width: Math.min(100, (currentMileage / maintenanceInterval) * 100) + '%',
+              width: mileageInfo.progress + '%',
             }"
             :class="
-              currentMileage / maintenanceInterval >= 1
+              mileageInfo.isOverdue
                 ? 'bg-red-600'
-                : currentMileage / maintenanceInterval >= 0.9
+                : mileageInfo.isWarning
                   ? 'bg-orange-500'
                   : 'bg-brand-primary'
             "
           ></div>
         </div>
+        <p class="text-[10px] text-text-placeholder mt-2 uppercase font-bold tracking-tight">
+          Interval: every {{ maintenanceInterval.toLocaleString() }} km
+        </p>
       </div>
 
       <div class="pt-4 border-t border-border-default">

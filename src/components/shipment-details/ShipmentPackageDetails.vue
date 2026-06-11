@@ -16,6 +16,8 @@ import {
 import { useAuthStore } from '@/stores/auth'
 import apiClient from '@/api/axios'
 import { routesApi } from '@/api/routes'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseModal from '@/components/ui/BaseModal.vue'
 
 const props = defineProps<{
   order: Order
@@ -149,10 +151,10 @@ const formatDate = (date: string | null | undefined): string => {
       <div class="mt-4 pt-4 border-t border-border-default flex items-center gap-2 text-xs">
         <span class="text-text-placeholder">Based on weight:</span>
         <span class="font-bold text-text-secondary">{{ order.weight }} kg</span>
-        <span class="text-text-placeholder ml-2">Initial Estimate:</span>
-        <span class="font-bold text-text-secondary"
-          >₴{{ (order.weight * 45).toLocaleString() }}</span
-        >
+        <span class="text-text-placeholder ml-2">Final Amount:</span>
+        <span class="font-bold text-text-secondary">
+          {{ order.total_amount > 0 ? `₴${order.total_amount.toLocaleString()}` : 'TBD' }}
+        </span>
       </div>
     </div>
 

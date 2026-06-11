@@ -6,11 +6,12 @@ import BaseSelect from '@/components/ui/BaseSelect.vue'
 import IconEye from '@/components/icons/IconEye.vue'
 import AuthSidebar from '@/components/auth/AuthSidebar.vue'
 import apiClient from '@/api/axios.ts'
-import router from '@/router'
+import { useRouter } from 'vue-router'
 import { getErrorMessage } from '@/utils/errorHandler'
 import { useToast } from '@/composables/useToast'
 import { AUTH } from '@/constants/ui'
 
+const router = useRouter()
 const { showSuccess, showError } = useToast()
 
 const fullName = ref('')

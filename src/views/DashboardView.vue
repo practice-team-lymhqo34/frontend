@@ -5,8 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notifications'
 import { ordersApi } from '@/api/orders'
 import { routesApi } from '@/api/routes'
-import type { Order } from '@/types/order'
-import type { Route } from '@/types/route'
+import type { Order, Route } from '@/types'
 import StatCard from '@/components/dashboard/StatCard.vue'
 import LatestUpdates from '@/components/dashboard/LatestUpdates.vue'
 import ActiveDeliveries, { type Delivery } from '@/components/dashboard/ActiveDeliveries.vue'
@@ -27,10 +26,9 @@ const fetchData = async () => {
       authStore.isManager ? routesApi.getDriverRoutes() : Promise.resolve([]),
       notificationStore.fetchNotifications(),
     ])
-    console.log('Dashboard Orders:', ordersRes)
-    console.log('Dashboard Routes:', routesRes)
+
     orders.value = ordersRes
-    allRoutes.value = Array.isArray(routesRes) ? routesRes : []
+    allRoutes.value = routesRes
   } catch (error) {
     console.error('Failed to fetch dashboard data:', error)
   } finally {
@@ -116,13 +114,18 @@ const currentMonth = new Date().toISOString().slice(0, 7)
 const activeDeliveries = computed(() =>
   orders.value
     .filter((o) => o.status === 'in_progress' || o.status === 'pending')
-    .map((o) => ({
-      id: o.id.toString(),
-      orderId: o.id.toString(),
-      title: o.title,
-      status: o.status,
-      estimatedArrival: 'Calculating...',
-    })),
+    .map((o) => {
+      const route = allRoutes.value.find((r) => r.order_id === o.id)
+      return {
+        id: o.id.toString(),
+        orderId: o.id.toString(),
+        title: o.title,
+        status: o.status,
+        estimatedArrival: route?.eta
+          ? new Date(route.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : 'TBD',
+      }
+    }),
 )
 
 const handleDeliveryClick = (delivery: Delivery) => {
