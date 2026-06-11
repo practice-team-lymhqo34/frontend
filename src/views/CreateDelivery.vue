@@ -3,7 +3,7 @@ import { reactive, ref, watch, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '@/api/axios'
 import { ordersApi } from '@/api/orders'
-import type { Order } from '@/types/order'
+import type { Order } from '@/types'
 import { Package, X, Copy, ChevronDown } from 'lucide-vue-next'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -352,7 +352,6 @@ const submitOrder = async () => {
             </div>
           </div>
 
-          <!-- Manager-only Tariff block -->
           <div
             v-if="authStore.isManager"
             class="bg-bg-canvas p-6 border border-gray-200 rounded-lg shadow-sm"

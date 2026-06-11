@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import type { Notification } from '@/types/notification'
+import type { Notification } from '@/types'
 import { notificationsApi } from '@/api/notifications'
 
 export const useNotificationStore = defineStore('notifications', () => {
@@ -10,9 +10,17 @@ export const useNotificationStore = defineStore('notifications', () => {
   const unreadNotifications = computed(() => notifications.value.filter((n) => !n.is_read))
 
   const maintenanceAlerts = computed(() =>
-    unreadNotifications.value.filter(
-      (n) => n.message.toLowerCase().includes('то') || n.message.toLowerCase().includes('мастил'),
-    ),
+    unreadNotifications.value.filter((n) => {
+      const msg = n.message.toLowerCase()
+      return (
+        msg.includes('то') ||
+        msg.includes('мастил') ||
+        msg.includes('maintenance') ||
+        msg.includes('service') ||
+        msg.includes('requires') ||
+        msg.includes('repair')
+      )
+    }),
   )
 
   const hasUnreadMaintenance = computed(() => maintenanceAlerts.value.length > 0)

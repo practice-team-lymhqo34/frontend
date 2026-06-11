@@ -1,6 +1,5 @@
 import apiClient from './axios'
-import type { Route, RouteStatus, DeliveryPhoto } from '@/types/route'
-import type { User } from '@/types/user'
+import type { Route, RouteStatus, DeliveryPhoto, User } from '@/types'
 
 export interface RouteStatusCreate {
   status: string

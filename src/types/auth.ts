@@ -1,4 +1,4 @@
-import type { UserRole } from '@/types/user.ts'
+import type { UserRole } from './user'
 
 export interface LoginPayload {
   email: string

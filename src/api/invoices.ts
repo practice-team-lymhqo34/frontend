@@ -1,5 +1,5 @@
 import apiClient from './axios'
-import type { Invoice } from '@/types/invoice'
+import type { Invoice } from '@/types'
 
 export const invoicesApi = {
   async getInvoices(): Promise<Invoice[]> {

@@ -1,5 +1,5 @@
 import apiClient from './axios'
-import type { MonthlyExpensesResponse, MonthlyExpensePoint } from '@/types/statistics'
+import type { MonthlyExpensesResponse, MonthlyExpensePoint } from '@/types'
 
 export const getMonthlyExpenses = async (month?: string): Promise<MonthlyExpensesResponse> => {
   const response = await apiClient.get<MonthlyExpensePoint[]>('/dashboard/statistics/monthly', {

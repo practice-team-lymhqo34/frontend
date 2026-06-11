@@ -1,5 +1,5 @@
 import apiClient from './axios'
-import type { Vehicle, VehicleCreate, VehicleUpdate } from '@/types/vehicle'
+import type { Vehicle, VehicleCreate, VehicleUpdate } from '@/types'
 
 export const vehiclesApi = {
   async getMyVehicles(): Promise<Vehicle[]> {

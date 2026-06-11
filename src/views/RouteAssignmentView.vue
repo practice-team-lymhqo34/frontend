@@ -11,9 +11,7 @@ import {
 } from 'lucide-vue-next'
 import { routesApi } from '@/api/routes'
 import { ordersApi } from '@/api/orders'
-import type { Order } from '@/types/order'
-import type { User as UserType } from '@/types/user'
-import type { Vehicle } from '@/types/vehicle'
+import type { Order, User as UserType, Vehicle } from '@/types'
 import { getErrorMessage } from '@/utils/errorHandler'
 
 const unassignedOrders = ref<Order[]>([])

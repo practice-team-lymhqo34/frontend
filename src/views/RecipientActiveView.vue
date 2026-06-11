@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { ordersApi } from '@/api/orders'
 import apiClient from '@/api/axios'
-import type { Order } from '@/types/order'
+import type { Order } from '@/types'
 import { Package, Clock, ChevronRight, Loader2 } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 
