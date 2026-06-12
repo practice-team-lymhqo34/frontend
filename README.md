@@ -88,4 +88,4 @@ docker-compose up -d --build
 ```
 
 The frontend application will be compiled, served via Nginx, and available at
-`http://localhost:8080` (or your specifically configured port).
+`http://localhost:80` (or your specifically configured port).
